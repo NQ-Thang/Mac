@@ -152,4 +152,14 @@ public class Sword : MonoBehaviour
         rb.bodyType = RigidbodyType2D.Kinematic;
         isReturning = true;
     }
+
+    public void FreezeSword()
+    {
+        Rigidbody2D swordRb = GetComponent<Rigidbody2D>();
+        if (swordRb != null)
+        {
+            swordRb.linearVelocity = Vector2.zero; // Triệt tiêu vận tốc bay
+            swordRb.bodyType = RigidbodyType2D.Kinematic; // Khóa cứng vật lý để không bị rơi rụng hay đẩy lệch
+        }
+    }
 }

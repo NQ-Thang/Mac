@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
@@ -20,124 +21,55 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private LayerMask groundCheckLayer;
     [SerializeField] private LayerMask wallCheckLayer;
 
-    [Header("Attack Settings")]
-    [SerializeField] private Transform attackPoint;
-    [SerializeField] private float attackRange = 0.5f;
-    [SerializeField] private LayerMask enemyLayer;
-    [SerializeField] private float attackOffsetDistance = 0.5f;
-    [SerializeField] private float attackDamege = 25f;
-
-    [Header("Ranged Attack (Sword Throw)")]
-    [SerializeField] private float swordPickUpDistance = 1f;
-    [SerializeField] private GameObject swordPrefab;
-    private GameObject activeSword;
-    private bool throwInput;
-
-    [Header("Dash to Sword Settings")]
-    [SerializeField] private float dashSpeed = 25f;
-    private bool isDashing = false;
-    private Vector2 dashTargetPosition;
-    private float originalGravity;
-
-    [Header("Dash Attack Settings")]
-    [SerializeField] private int dashDamage = 2;              // Sát thương khi dash xuyên qua quái
-    [SerializeField] private float dashDamageRadius = 0.6f;    // Bán kính quét sát thương xung quanh Player
-    private Health playerHealth;
-    private List<Collider2D> enemiesHitDuringDash = new List<Collider2D>();
-
     private Rigidbody2D rb;
     private float horizontalInput;
     private bool jumpInput;
-    private bool attackInput;
     private bool isWallSliding = false;
     private bool isWallJumping = false;
     private bool isWallFreezing = false;
     private float wallJumpDirection;
     private float wallJumpCounter;
+    private float originalGravity;
+
+    // Thuộc tính để các Script combat/dash truy cập công khai
+    public bool IsDashing { get; set; } = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        playerHealth = GetComponent<Health>();
         originalGravity = rb.gravityScale;
     }
 
     void Update()
     {
-        if (isDashing)
-        {
-            CheckDashArrival();
-        }
-        else
-        {
-            GatherInput();
-            HandleWallSlideState(); // Kiểm tra trạng thái bám tường liên tục
-        }
+        if (IsDashing) return;
 
-        RotateAttackPointTowardsMouse();
-        CheckAutoPickUpSword();
+        GatherInput();
+        HandleWallSlideState();
     }
 
     void FixedUpdate()
     {
-        if (isDashing)
-        {
-            ExecuteDash();
-            HandleDashDamage();
-            return;
-        }
+        if (IsDashing) return;
 
-        // Logic di chuyển vật lý
-        if (!isWallJumping) // Nếu đang trong thời gian nhảy bật tường, khóa phím di chuyển một tí để lực đẩy tự nhiên
+        if (!isWallJumping)
         {
             MovePlayer();
         }
 
-        if (rb.linearVelocity.y < 0) // Khi vận tốc trục Y nhỏ hơn 0, nghĩa là nhân vật đang trên đà RƠI XUỐNG
+        if (rb.linearVelocity.y < 0)
         {
-            // Cộng thêm một lượng trọng lực gia tăng để kéo nhân vật xuống nhanh hơn
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }
 
-        HandleWallSlidePhysics(); // Áp dụng lực trượt tường
+        HandleWallSlidePhysics();
         HandleJump();
-        HandleAttack();
-        HandleThrow();
     }
 
     void GatherInput()
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
-
         if (Input.GetButtonDown("Jump")) jumpInput = true;
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            if (activeSword == null)
-            {
-                attackInput = true;
-            }
-        }
-
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            RecallSword();
-        }
-
-        if (Input.GetMouseButtonDown(1)) throwInput = true;
-    }
-
-    void RecallSword()
-    {
-        if (activeSword != null)
-        {
-            Sword swordScript = activeSword.GetComponent<Sword>();
-            if (swordScript != null)
-            {
-                // Gọi hàm CallRecall đã có sẵn trong script Sword của bạn
-                swordScript.CallRecall();
-            }
-        }
     }
 
     void MovePlayer()
@@ -147,7 +79,6 @@ public class PlayerMovement : MonoBehaviour
         else if (horizontalInput < 0) transform.localScale = new Vector3(-1f, 1f, 1f);
     }
 
-    // XỬ LÝ NHẢY THƯỜNG VÀ NHẢY TƯỜNG
     void HandleJump()
     {
         if (jumpInput)
@@ -160,7 +91,6 @@ public class PlayerMovement : MonoBehaviour
             {
                 isWallJumping = true;
                 wallJumpDirection = -transform.localScale.x;
-
                 rb.linearVelocity = new Vector2(wallJumpDirection * wallJumpForce.x, wallJumpForce.y);
                 wallJumpCounter = wallJumpDuration;
             }
@@ -171,14 +101,10 @@ public class PlayerMovement : MonoBehaviour
         if (isWallJumping)
         {
             wallJumpCounter -= Time.fixedDeltaTime;
-            if (wallJumpCounter <= 0)
-            {
-                isWallJumping = false;
-            }
+            if (wallJumpCounter <= 0) isWallJumping = false;
         }
     }
 
-    // XỬ LÝ TRẠNG THÁI BÁM TƯỜNG (Slide)
     void HandleWallSlideState()
     {
         if (isWallJumping)
@@ -192,25 +118,16 @@ public class PlayerMovement : MonoBehaviour
 
         if (currentlyTouchingWall)
         {
-            // Tính toán xem bức tường đang nằm ở bên nào của nhân vật dựa vào scale (hướng mặt)
-            // Vì chúng ta đã làm hàm Flip(), nhân vật quay mặt sang hướng nào thì wallCheck ở hướng đó.
             float wallDirection = transform.localScale.x;
 
-            // ĐIỀU KIỆN MỚI CHUẨN XỊN:
-            // Nếu đang bay lên (Y > 0) VÀ vận tốc X của nhân vật đang cùng hướng với bức tường (đang ép vào tường từ đất)
-            // HOẶC vận tốc X bằng 0 (nhảy thẳng đứng sát tường lên)
             if (rb.linearVelocity.y > 0.1f && (Mathf.Sign(rb.linearVelocity.x) == wallDirection || Mathf.Abs(rb.linearVelocity.x) < 0.1f))
             {
-                // Cho phép lực nhảy từ đất hoạt động trọn vẹn, KHÔNG bật trượt tường để không bị ghì xuống!
                 isWallSliding = false;
                 isWallFreezing = false;
             }
-            // TẤT CẢ CÁC TRƯỜNG HỢP KHÁC: Đang rơi xuống, HOẶC đang bay lên do Wall Jump (vận tốc X đang lao ra xa tường và người chơi ghì ngược lại)
             else
             {
                 isWallSliding = true;
-
-                // Chỉ cho khựng khi thực sự rơi xuống
                 if (!isWallFreezing && rb.linearVelocity.y <= 0.1f)
                 {
                     StartCoroutine(WallCatchRoutine());
@@ -224,12 +141,13 @@ public class PlayerMovement : MonoBehaviour
             StopCoroutine(WallCatchRoutine());
         }
     }
+
     IEnumerator WallCatchRoutine()
     {
-        isWallFreezing = true; // Bật trạng thái đóng băng
-        isWallSliding = true;   // Kích hoạt trạng thái tường luôn để có thể Wall Jump nếu muốn
+        isWallFreezing = true;
+        isWallSliding = true;
         yield return new WaitForSeconds(wallCatchDelay);
-        isWallFreezing = false; // Hết thời gian khựng, chuyển sang trượt xuống
+        isWallFreezing = false;
     }
 
     void HandleWallSlidePhysics()
@@ -240,118 +158,11 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    public bool IsGrounded()
-    {
-        return Physics2D.OverlapCircle(groundCheckPosition.position, groundCheckRadius, groundCheckLayer);
-    }
-
-    public bool IsTouchingWall()
-    {
-        return Physics2D.OverlapCircle(wallCheckPosition.position, wallCheckRadius, wallCheckLayer);
-    }
-
-    void HandleAttack()
-    {
-        if (attackInput)
-        {
-            Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
-            foreach (Collider2D enemy in hitEnemies)
-            {
-                Health enemyHealth = enemy.GetComponent<Health>();
-                if(enemyHealth != null)
-                {
-                    enemyHealth.TakeDamage(attackDamege, transform.position);
-                }
-            }
-            attackInput = false;
-        }
-    }
-
-    void RotateAttackPointTowardsMouse()
-    {
-        if (attackPoint == null) return;
-        Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorldPosition.z = 0f;
-        Vector3 direction = (mouseWorldPosition - transform.position).normalized;
-        attackPoint.position = transform.position + direction * attackOffsetDistance;
-    }
-
-    void HandleThrow()
-    {
-        if (throwInput)
-        {
-            throwInput = false;
-
-            if (activeSword != null)
-            {
-                Sword swordScript = activeSword.GetComponent<Sword>();
-                if (swordScript != null && swordScript.CanDashTo)
-                {
-                    dashTargetPosition = activeSword.transform.position;
-                    isDashing = true;
-                    rb.gravityScale = 0f;
-                    enemiesHitDuringDash.Clear();
-                    if (playerHealth != null) playerHealth.SetDashInvincibility(true);
-                }
-                return;
-            }
-
-            Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            mouseWorldPosition.z = 0f;
-            Vector2 throwDirection = (mouseWorldPosition - transform.position).normalized;
-
-            activeSword = Instantiate(swordPrefab, transform.position, Quaternion.identity);
-
-            Sword newSwordScript = activeSword.GetComponent<Sword>();
-            if (newSwordScript != null)
-            {
-                newSwordScript.Launch(throwDirection, transform);
-            }
-        }
-    }
-
-    void ExecuteDash()
-    {
-        Vector2 currentPos = transform.position;
-        Vector2 dashDirection = (dashTargetPosition - currentPos).normalized;
-        rb.linearVelocity = dashDirection * dashSpeed;
-    }
-
-    void CheckDashArrival()
-    {
-        float distanceToTarget = Vector2.Distance(transform.position, dashTargetPosition);
-        bool isDashingDown = rb.linearVelocity.y < -0.1f;
-
-        // Thêm IsTouchingWall để dừng lướt nếu đâm sầm vào vách tường khi lướt ngang
-        if (distanceToTarget < 0.4f || (isDashingDown && IsGrounded()) || IsTouchingWall())
-        {
-            isDashing = false;
-            rb.gravityScale = originalGravity;
-            rb.linearVelocity = Vector2.zero;
-
-            if (playerHealth != null) playerHealth.SetDashInvincibility(false);
-
-            enemiesHitDuringDash.Clear();
-
-            if (distanceToTarget < 0.4f)
-            {
-                transform.position = dashTargetPosition;
-            }
-            if (activeSword != null)
-            {
-                Destroy(activeSword);
-                activeSword = null;
-            }
-        }
-    }
+    public bool IsGrounded() => Physics2D.OverlapCircle(groundCheckPosition.position, groundCheckRadius, groundCheckLayer);
+    public bool IsTouchingWall() => Physics2D.OverlapCircle(wallCheckPosition.position, wallCheckRadius, wallCheckLayer);
 
     private void OnDrawGizmos()
     {
-        if (attackPoint != null)
-        {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(attackPoint.position, attackRange);
-        }
         if (groundCheckPosition != null)
         {
             Gizmos.color = Color.red;
@@ -359,51 +170,8 @@ public class PlayerMovement : MonoBehaviour
         }
         if (wallCheckPosition != null)
         {
-            Gizmos.color = Color.yellow; // Vẽ vòng tròn check tường màu xanh lá cây
+            Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(wallCheckPosition.position, wallCheckRadius);
-        }
-    }
-
-    private void CheckAutoPickUpSword()
-    {
-        if (activeSword != null && !isDashing)
-        {
-            // Lấy script Sword từ cây kiếm đang active
-            Sword swordScript = activeSword.GetComponent<Sword>();
-
-            // CHỈ tự nhặt khi kiếm đã bay đủ xa (CanBePickedUp == true)
-            if (swordScript != null && swordScript.CanBePickedUp)
-            {
-                float distanceToSword = Vector2.Distance(transform.position, activeSword.transform.position);
-
-                if (distanceToSword <= swordPickUpDistance)
-                {
-                    Debug.Log("Nhân vật đi đến gần và tự động nhặt lại kiếm!");
-                    Destroy(activeSword);
-                    activeSword = null;
-                }
-            }
-        }
-    }
-
-    void HandleDashDamage()
-    {
-        // Quét tất cả vật thể thuộc enemyLayer nằm trong bán kính dashDamageRadius xung quanh người chơi
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, dashDamageRadius, enemyLayer);
-
-        foreach (Collider2D enemy in hitEnemies)
-        {
-            if (!enemiesHitDuringDash.Contains(enemy))
-            {
-                Health enemyHealth = enemy.GetComponent<Health>();
-                if (enemyHealth != null)
-                {
-                    enemyHealth.TakeDamage(dashDamage, transform.position);
-
-                    // Thêm con quái này vào danh sách "đã xử lý" để các khung hình sau không quét lại nó nữa
-                    enemiesHitDuringDash.Add(enemy);
-                }
-            }
         }
     }
 }

@@ -555,6 +555,45 @@ MonoBehaviour:
   knockbackForceY: 5
   knockbackDuration: 0.2
   isPlayer: 1
+--- !u!114 &1483183578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1483183564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5dfee9d0566308348b40e9757618f6b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  swordPickUpDistance: 1
+  swordPrefab: {fileID: 1256633772694715456, guid: 3799676ce5c51b647b981c696ee5cccc, type: 3}
+  dashSpeed: 30
+  dashDamage: 2
+  dashDamageRadius: 0.6
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+--- !u!114 &1483183579
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1483183564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baa6b405d4e920c49b6a7ed4d59ff6a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackPoint: {fileID: 1903761939}
+  attackRange: 0.5
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  attackOffsetDistance: 0.5
+  attackDamage: 25
 --- !u!1 &1574646592
 GameObject:
   m_ObjectHideFlags: 0
@@ -689,6 +728,11 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!4 &1903761939 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 885273275208180433, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
+  m_PrefabInstance: {fileID: 7218370281300818638}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7218370281300818638
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -793,6 +837,12 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6209226506316007078, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1483183579}
+    - targetCorrespondingSourceObject: {fileID: 6209226506316007078, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1483183578}
     - targetCorrespondingSourceObject: {fileID: 6209226506316007078, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1483183577}
