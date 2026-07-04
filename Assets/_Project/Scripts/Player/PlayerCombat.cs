@@ -21,7 +21,7 @@ public class PlayerCombat : MonoBehaviour
 
     void Update()
     {
-        if (movement.IsDashing) return;
+        if (movement.isDashing) return;
 
         // Chỉ cho chém thường nếu chuột trái xuống VÀ kiếm KHÔNG ở ngoài vách/quái
         if (Input.GetMouseButtonDown(0) && (swordTech == null || !swordTech.HasActiveSword()))
@@ -34,7 +34,7 @@ public class PlayerCombat : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (movement.IsDashing) return;
+        if (movement.isDashing) return;
         HandleAttack();
     }
 

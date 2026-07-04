@@ -32,7 +32,7 @@ public class PlayerMovement : MonoBehaviour
     private float originalGravity;
 
     // Thuộc tính để các Script combat/dash truy cập công khai
-    public bool IsDashing { get; set; } = false;
+    public bool isDashing { get; set; } = false;
 
     void Start()
     {
@@ -42,7 +42,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        if (IsDashing) return;
+        if (isDashing) return;
 
         GatherInput();
         HandleWallSlideState();
@@ -50,7 +50,7 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (IsDashing) return;
+        if (isDashing) return;
 
         if (!isWallJumping)
         {

@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 8435372281452569864}
   m_Layer: 0
   m_Name: FlyingSword
-  m_TagString: Untagged
+  m_TagString: Sword
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -136,6 +136,7 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 320
+  swordDamage: 30
 --- !u!58 &8435372281452569864
 CircleCollider2D:
   m_ObjectHideFlags: 0

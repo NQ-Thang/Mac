@@ -36,7 +36,7 @@ public class PlayerSwordTech : MonoBehaviour
 
     void Update()
     {
-        if (movement.IsDashing)
+        if (movement.isDashing)
         {
             CheckDashArrival();
         }
@@ -51,7 +51,7 @@ public class PlayerSwordTech : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (movement.IsDashing)
+        if (movement.isDashing)
         {
             ExecuteDash();
             HandleDashDamage();
@@ -103,7 +103,7 @@ public class PlayerSwordTech : MonoBehaviour
             dashTargetPosition = activeSword.transform.position;
 
             // 3. THIẾT LẬP TRẠNG THÁI DASH VÀ KHÓA VẬT LÝ PLAYER
-            movement.IsDashing = true;
+            movement.isDashing = true;
             rb.gravityScale = 0f;
             enemiesHitDuringDash.Clear();
 
@@ -138,42 +138,20 @@ public class PlayerSwordTech : MonoBehaviour
     void CheckDashArrival()
     {
         float distanceToTarget = Vector2.Distance(transform.position, dashTargetPosition);
-
-        // Kiểm tra hướng lướt xuống
         bool isDashingDown = rb.linearVelocity.y < -0.1f;
-
-        // CHỈ CHO PHÉP DỪNG DO CHẠM ĐẤT/TƯỜNG KHI ĐÃ BẮT ĐẦU TIẾP CẬN GẦN MỤC TIÊU (Ví dụ: khoảng cách < 1.5 đơn vị)
         bool canCheckObstacles = distanceToTarget < 1.5f;
 
         if (distanceToTarget < 0.4f ||
            (canCheckObstacles && isDashingDown && movement.IsGrounded()) ||
            (canCheckObstacles && movement.IsTouchingWall()))
         {
-            // 1. ĐƯA NHÂN VẬT VỀ ĐÚNG VỊ TRÍ ĐÍCH TRƯỚC
             if (distanceToTarget < 0.4f)
             {
                 transform.position = dashTargetPosition;
             }
 
-            // 2. TRIỆT TIÊU TOÀN BỘ VẬN TỐC CŨ VÀ TRẢ LẠI TRỌNG LỰC
-            rb.gravityScale = originalGravity;
-            rb.linearVelocity = Vector2.zero;
-
-            // 3. HIỆN LẠI CƠ THỂ NHÂN VẬT
-            if (playerSprite != null) playerSprite.enabled = true;
-
-            // 4. MỞ KHÓA TRẠNG THÁI BẤT TỬ VÀ XÓA ĐỐNG KIẾM CŨ
-            if (playerHealth != null) playerHealth.SetDashInvincibility(false);
-            enemiesHitDuringDash.Clear();
-
-            if (activeSword != null)
-            {
-                Destroy(activeSword);
-                activeSword = null;
-            }
-
-            // 5. CUỐI CÙNG MỚI MỞ KHÓA DI CHUYỂN THƯỜNG
-            movement.IsDashing = false;
+            // Gọi hàm dọn dẹp sạch sẽ
+            ResetDashState();
         }
     }
 
@@ -196,7 +174,7 @@ public class PlayerSwordTech : MonoBehaviour
 
     private void CheckAutoPickUpSword()
     {
-        if (activeSword != null && !movement.IsDashing)
+        if (activeSword != null && !movement.isDashing)
         {
             Sword swordScript = activeSword.GetComponent<Sword>();
             if (swordScript != null && swordScript.CanBePickedUp)
@@ -208,6 +186,56 @@ public class PlayerSwordTech : MonoBehaviour
                     Destroy(activeSword);
                     activeSword = null;
                 }
+            }
+        }
+    }
+
+    private void ResetDashState()
+    {
+        rb.gravityScale = originalGravity;
+        rb.linearVelocity = Vector2.zero;
+
+        if (playerSprite != null) playerSprite.enabled = true;
+        if (playerHealth != null) playerHealth.SetDashInvincibility(false);
+
+        enemiesHitDuringDash.Clear();
+
+        if (activeSword != null)
+        {
+            Destroy(activeSword);
+            activeSword = null;
+        }
+
+        movement.isDashing = false;
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        // Nếu đang dash và đâm trúng Quái Neo đang bị găm kiếm
+        if (movement.isDashing && collision.CompareTag("Enemy"))
+        {
+            AnchorPointEnemy anchorEnemy = collision.GetComponent<AnchorPointEnemy>();
+            if (anchorEnemy != null && anchorEnemy.IsSwordStuck)
+            {
+                float bounceForce = anchorEnemy.GetBounceForce();
+
+                // 1. Tiêu diệt quái trước
+                anchorEnemy.ExecuteAnchorKill();
+
+                // 2. Dọn dẹp trạng thái Dash (Hiện lại hình, trả trọng lực...)
+                ResetDashState();
+
+                // 3. Mượn hệ thống Wall Jump để khóa di chuyển ngang tạm thời
+                try
+                {
+                    typeof(PlayerMovement).GetField("isWallJumping", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, true);
+                    typeof(PlayerMovement).GetField("wallJumpCounter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, 0.25f);
+                }
+                catch (System.Exception e) { Debug.LogError(e.Message); }
+
+                // 4. Thực hiện cú nảy vút lên trời
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, bounceForce);
+                Debug.Log("Đâm trúng điểm neo thành công! Nhân vật đã hiện hình và nảy lên.");
             }
         }
     }
