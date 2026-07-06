@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class PlayerSwordTech : MonoBehaviour
 {
+    [Header("Sword Mode Management")]
+    [SerializeField] private Sword.SwordMode preferredSwordMode = Sword.SwordMode.StickToEnemies;
+
     [Header("Ranged Attack (Sword Throw)")]
     [SerializeField] private float swordPickUpDistance = 1f;
     [SerializeField] private GameObject swordPrefab;
@@ -19,6 +22,7 @@ public class PlayerSwordTech : MonoBehaviour
     [SerializeField] private float dashDamageRadius = 0.6f;
     [SerializeField] private LayerMask enemyLayer;
     private SpriteRenderer playerSprite;
+
 
     private Rigidbody2D rb;
     private PlayerMovement movement;
@@ -44,6 +48,15 @@ public class PlayerSwordTech : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(1)) throwInput = true;
             if (Input.GetKeyDown(KeyCode.R)) RecallSword();
+
+
+            if (Input.GetKeyDown(KeyCode.Q))
+            {
+                preferredSwordMode = (preferredSwordMode == Sword.SwordMode.PierceAll)
+                    ? Sword.SwordMode.StickToEnemies
+                    : Sword.SwordMode.PierceAll;
+                Debug.Log("Đã đổi chế độ ném kiếm sang: " + preferredSwordMode);
+            }
 
             CheckAutoPickUpSword();
         }
@@ -124,6 +137,7 @@ public class PlayerSwordTech : MonoBehaviour
         Sword newSwordScript = activeSword.GetComponent<Sword>();
         if (newSwordScript != null)
         {
+            newSwordScript.SetMode(preferredSwordMode);
             newSwordScript.Launch(throwDirection, transform);
         }
     }
