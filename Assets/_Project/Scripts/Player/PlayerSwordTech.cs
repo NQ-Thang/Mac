@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -151,22 +152,83 @@ public class PlayerSwordTech : MonoBehaviour
 
     void CheckDashArrival()
     {
-        float distanceToTarget = Vector2.Distance(transform.position, dashTargetPosition);
-        bool isDashingDown = rb.linearVelocity.y < -0.1f;
-        bool canCheckObstacles = distanceToTarget < 1.5f;
+        if (activeSword == null) return;
 
-        if (distanceToTarget < 0.4f ||
-           (canCheckObstacles && isDashingDown && movement.IsGrounded()) ||
-           (canCheckObstacles && movement.IsTouchingWall()))
+        float distanceToTarget = Vector2.Distance(transform.position, dashTargetPosition);
+
+        // Nếu đã đến rất sát kiếm (Đích đến của Dash)
+        if (distanceToTarget < 0.5f)
         {
-            if (distanceToTarget < 0.4f)
+            // Đưa nhân vật về đúng tâm đích đến
+            transform.position = dashTargetPosition;
+
+            // KIỂM TRA XEM KIẾM ĐANG CẮM TRÊN CƠ THỂ AI?
+            Transform swordParent = activeSword.transform.parent;
+
+            if (swordParent != null)
             {
-                transform.position = dashTargetPosition;
+                // Tìm Component từ đối tượng cha trực tiếp HOẶC các cha cấp cao hơn của nó
+                AnchorPointEnemy anchorEnemy = swordParent.GetComponentInParent<AnchorPointEnemy>();
+                if (anchorEnemy != null)
+                {
+                    float bounceForce = anchorEnemy.GetBounceForce();
+                    anchorEnemy.ExecuteAnchorKill(); // Chắc chắn sẽ xơi tái được con Anchor dù kiếm cắm vào hitbox con của nó
+                    TriggerBounce(bounceForce);
+                    Debug.Log("Kích hoạt giết Anchor thành công nhờ GetComponentInParent!");
+                    return;
+                }
+
+                // Nếu không phải Anchor, mới check xem có phải quái thường không
+                Health enemyHealth = swordParent.GetComponentInParent<Health>();
+                if (enemyHealth != null)
+                {
+                    TriggerBounce(12f);
+                    Debug.Log("Kích hoạt nảy trên quái thường!");
+                    return;
+                }
             }
 
-            // Gọi hàm dọn dẹp sạch sẽ
+            // Trường hợp 3: Kiếm cắm trên tường hoặc đất trống (Không có cha) -> Đáp xuống bình thường
             ResetDashState();
         }
+
+        // Logic phụ cho Grounded/Wall khi lướt xuống đất (chỉ áp dụng nếu kiếm không găm vào quái)
+        else if (activeSword.transform.parent == null)
+        {
+            bool isDashingDown = rb.linearVelocity.y < -0.1f;
+            bool canCheckObstacles = distanceToTarget < 1.5f;
+            if ((canCheckObstacles && isDashingDown && movement.IsGrounded()) || (canCheckObstacles && movement.IsTouchingWall()))
+            {
+                ResetDashState();
+            }
+        }
+    }
+
+    // Hàm va chạm bây giờ CHỈ dùng để chặn mất máu khi đang lướt
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        // Nếu đang trong trạng thái Dash, bỏ qua việc nhận sát thương từ các Trigger khác
+        if (movement.isDashing) return;
+    }
+
+    private void TriggerBounce(float bounceForce)
+    {
+        // 1. Kích hoạt bất tử kéo dài NGAY TRƯỚC khi tắt Dash
+        StartCoroutine(PostDashInvincibilityRoutine(0.3f));
+
+        // 2. Dọn dẹp trạng thái lướt (Hiện lại hình, hủy activeSword, tắt isDashing)
+        ResetDashState();
+
+        // 3. Khóa di chuyển ngang bằng hệ thống Wall Jump (0.25 giây)
+        try
+        {
+            typeof(PlayerMovement).GetField("isWallJumping", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, true);
+            typeof(PlayerMovement).GetField("wallJumpCounter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, 0.25f);
+        }
+        catch (System.Exception e) { Debug.LogError(e.Message); }
+
+        // 4. Thực hiện cú nảy vật lý vút lên trời
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, bounceForce);
     }
 
     void HandleDashDamage()
@@ -225,32 +287,61 @@ public class PlayerSwordTech : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // Nếu đang dash và đâm trúng Quái Neo đang bị găm kiếm
-        if (movement.isDashing && collision.CompareTag("Enemy"))
+        // Chấp nhận cả việc va chạm với con Quái (Enemy) HOẶC va chạm trực tiếp với chính cây Kiếm (Sword) đang cắm trên quái
+        if (movement.isDashing)
         {
+            // 1. TRƯỜNG HỢP: Chạm trúng Quái Neo chuyên dụng
             AnchorPointEnemy anchorEnemy = collision.GetComponent<AnchorPointEnemy>();
             if (anchorEnemy != null && anchorEnemy.IsSwordStuck)
             {
                 float bounceForce = anchorEnemy.GetBounceForce();
-
-                // 1. Tiêu diệt quái trước
                 anchorEnemy.ExecuteAnchorKill();
-
-                // 2. Dọn dẹp trạng thái Dash (Hiện lại hình, trả trọng lực...)
-                ResetDashState();
-
-                // 3. Mượn hệ thống Wall Jump để khóa di chuyển ngang tạm thời
-                try
-                {
-                    typeof(PlayerMovement).GetField("isWallJumping", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, true);
-                    typeof(PlayerMovement).GetField("wallJumpCounter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, 0.25f);
-                }
-                catch (System.Exception e) { Debug.LogError(e.Message); }
-
-                // 4. Thực hiện cú nảy vút lên trời
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, bounceForce);
-                Debug.Log("Đâm trúng điểm neo thành công! Nhân vật đã hiện hình và nảy lên.");
+                TriggerBounce(bounceForce);
+                return;
             }
+
+            // 2. TRƯỜNG HỢP: Chạm trúng quái thường đang bị kiếm găm, hoặc chạm trúng chính cây kiếm đang găm trên quái
+            bool hitEnemyWithSword = (collision.CompareTag("Enemy") || collision.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+                                     && activeSword != null && activeSword.transform.IsChildOf(collision.transform);
+
+            bool hitStuckSwordDirectly = collision.CompareTag("Sword") && activeSword != null && activeSword.transform.parent != null;
+
+            if (hitEnemyWithSword || hitStuckSwordDirectly)
+            {
+                // Kích hoạt cú nảy với lực 12f
+                TriggerBounce(12f);
+                Debug.Log("Va chạm thành công! Kích hoạt bật nảy và bất tử ngắn.");
+            }
+        }
+    }
+
+    private void TriggerBounce(float bounceForce)
+    {
+        // Bật hiệu ứng bất tử ngắn TRƯỚC khi ResetDashState giải phóng
+        StartCoroutine(PostDashInvincibilityRoutine(0.3f));
+
+        // Thực hiện dọn dẹp trạng thái lướt thông thường
+        ResetDashState();
+
+        // Mượn hệ thống Wall Jump để khóa phím ngang trong 0.25 giây
+        try
+        {
+            typeof(PlayerMovement).GetField("isWallJumping", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, true);
+            typeof(PlayerMovement).GetField("wallJumpCounter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(movement, 0.25f);
+        }
+        catch (System.Exception e) { Debug.LogError(e.Message); }
+
+        // Ép vận tốc nảy lên
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, bounceForce);
+    }
+
+    private IEnumerator PostDashInvincibilityRoutine(float duration)
+    {
+        if (playerHealth != null)
+        {
+            playerHealth.SetDashInvincibility(true); // Bật lại bất tử
+            yield return new WaitForSeconds(duration); // Chờ 0.25 giây trong lúc nhân vật đang nảy lên
+            playerHealth.SetDashInvincibility(false); // Tắt bất tử, trả lại trạng thái bình thường
         }
     }
 }

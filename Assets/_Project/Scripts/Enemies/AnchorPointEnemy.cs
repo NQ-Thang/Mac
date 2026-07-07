@@ -12,12 +12,11 @@ public class AnchorPointEnemy : MonoBehaviour
     private bool isSwordStuck = false;
     private GameObject stuckSword;
 
-    // Getter công khai để Player check xem quái đã bị găm kiếm chưa
     public bool IsSwordStuck => isSwordStuck;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 1. XỬ LÝ GĂM KIẾM
+        // CHỈ XỬ LÝ GĂM KIẾM KHI KIẾM BAY TRÚNG
         if (collision.CompareTag("Sword") && !isSwordStuck)
         {
             Sword swordScript = collision.GetComponent<Sword>();
@@ -36,21 +35,20 @@ public class AnchorPointEnemy : MonoBehaviour
                 Vector3 hitPoint = collision.transform.position;
                 Vector3 centerPoint = transform.position;
                 collision.transform.position = Vector3.Lerp(hitPoint, centerPoint, penetrationDepth);
+
+                // Găm cây kiếm làm con trực tiếp của Quái Neo
                 collision.transform.SetParent(transform);
 
-                Debug.Log("Kiếm đã găm sâu vào điểm Neo!");
+                Debug.Log("Kiếm đã găm vào điểm Neo!");
             }
         }
-
-        // LƯU Ý: Phần xử lý va chạm với Player được chuyển sang script của Player 
-        // để đảm bảo dọn dẹp dữ liệu hiển thị (Sprite) đồng bộ nhất.
     }
 
     public void ExecuteAnchorKill()
     {
         if (stuckSword != null)
         {
-            stuckSword.transform.SetParent(null);
+            stuckSword.transform.SetParent(null); // Giải phóng kiếm trước khi chết để tránh lỗi tham chiếu
         }
         Destroy(gameObject);
     }
