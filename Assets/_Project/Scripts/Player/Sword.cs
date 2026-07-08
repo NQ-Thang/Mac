@@ -47,7 +47,6 @@ public class Sword : MonoBehaviour
 
         if (isStopped) return;
 
-        // Nếu kiếm đang bay ra và khoảng cách với người chơi đã > 1.5m, cho phép nhặt
         if (playerTransform != null && Vector3.Distance(playerTransform.position, transform.position) > 1.5f)
         {
             CanBePickedUp = true;
@@ -65,14 +64,11 @@ public class Sword : MonoBehaviour
     {
         isStopped = true;
 
-        rb.linearVelocity = Vector2.zero;
-        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.linearVelocity = Vector2.zero; // đặt vận tốc về 0 để kiếm dừng lại
+        rb.bodyType = RigidbodyType2D.Kinematic; // không còn chịu tác động vật lý nữa
         Debug.Log("Kiếm đạt tầm tối đa, khựng lại chờ " + freezeDuration + " giây...");
 
-        yield return new WaitForSeconds(freezeDuration);
-
-        isReturning = true;
-        Debug.Log("Hết thời gian chờ, kiếm đang bay về!");
+        yield return new WaitForSeconds(freezeDuration); // Hàm này sẽ dừng lại trong khoảng thời gian freezeDuration nhưng game vẫn hoạt động bình thường
 
         if(!isStuck)
         {
@@ -82,7 +78,7 @@ public class Sword : MonoBehaviour
 
     void HandleReturnToPlayer()
     {
-        if (playerTransform == null)
+        if (playerTransform == null) // nếu người chơi chết thì xóa bỏ luôn kiếm
         {
             Destroy(gameObject);
             return;
@@ -94,7 +90,7 @@ public class Sword : MonoBehaviour
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if(distanceToPlayer < 1.5f)
         {
-            CanDashTo = false;
+            CanDashTo = false; // không cho dash tới kiếm khi nó đang gần người chơi
         }
         if (distanceToPlayer < 0.5f)
         {
@@ -107,31 +103,28 @@ public class Sword : MonoBehaviour
     {
         if (rb == null) rb = GetComponent<Rigidbody2D>();
         rb.linearVelocity = launchDirection * flyingSpeed;
-        transform.rotation = Quaternion.identity;
+        transform.rotation = Quaternion.identity; // đặt lại góc quay của kiếm để tránh bị xoay khi bay
 
-        playerTransform = player;
+        playerTransform = player; // lưu lại transform của người chơi để kiếm có thể quay về
         CanDashTo = true;
         isStuck = false;
     }
 
-    public void OnTriggerEnter2D(Collider2D other)
+    public void OnTriggerEnter2D(Collider2D other) // other là collider của vật thể mà kiếm va chạm vào
     {
         if (isStuck) return;
 
-        // 1. Xử lý gây sát thương khi chạm Quái
-        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy") || other.CompareTag("Enemy"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy") || other.CompareTag("Enemy")) // kiểm tra tag và layer xem có phải là enemy không
         {
-            Health enemyHealth = other.GetComponentInParent<Health>(); // Lấy Health từ cha nếu là đa hitbox
+            Health enemyHealth = other.GetComponentInParent<Health>(); // lấy script Health
             if (enemyHealth != null)
             {
                 enemyHealth.TakeDamage(swordDamage, transform.position);
             }
 
-            // XỬ LÝ GĂM KIẾM THEO CHẾ ĐỘ
             HandleSwordSticking(other);
         }
 
-        // 2. Xử lý găm vào tường/đất
         if (((1 << other.gameObject.layer) & groundLayer) != 0)
         {
             if (isReturning) return;
@@ -141,27 +134,22 @@ public class Sword : MonoBehaviour
 
     private void HandleSwordSticking(Collider2D other)
     {
-        // TRƯỜNG HỢP 1: Chạm trúng con AnchorPointEnemy (Luôn luôn găm, giữ nguyên logic cũ)
         AnchorPointEnemy anchor = other.GetComponent<AnchorPointEnemy>();
-        if (anchor != null) return; // Để con Anchor tự xử lý logic găm của nó như cũ
+        if (anchor != null) return; // nếu va chạm vào AnchorPointEnemy thì thoát hàm luôn
 
-        // TRƯỜNG HỢP 2: Chế độ Xuyên thấu (PierceAll) -> Bỏ qua không găm vào quái thường
-        if (currentMode == SwordMode.PierceAll) return;
+        if (currentMode == SwordMode.PierceAll) return; // nếu kiếm đang ở chế độ PierceAll thì không găm vào quái, thoát hàm luôn
 
-        // TRƯỜNG HỢP 3: Chế độ Luôn găm (StickToEnemies)
         if (currentMode == SwordMode.StickToEnemies)
         {
             if (isReturning) return;
 
-            // BỘ LỌC HITBOX CHO BOSS VÀ QUÁI TO:
-            // Nếu collider có tag "SwordIgnore" (ví dụ gán cho Thân/Chân Boss) -> Cho kiếm xuyên qua
+            // các collider có tag "SwordIgnore" hoặc tên chứa "Body" hoặc "Legs" sẽ không cho phép kiếm găm vào
             if (other.CompareTag("SwordIgnore") || other.gameObject.name.Contains("Body") || other.gameObject.name.Contains("Legs"))
             {
                 Debug.Log("Kiếm xuyên qua vùng không cho phép găm: " + other.gameObject.name);
                 return;
             }
 
-            // Nếu vượt qua bộ lọc (hoặc là quái nhỏ chỉ có 1 hitbox), tiến hành găm vào quái:
             StuckInEnemy(other);
         }
     }
@@ -171,24 +159,20 @@ public class Sword : MonoBehaviour
         CanBePickedUp = true;
         isStuck = true;
         isReturning = false;
-        StopAllCoroutines();
+        StopAllCoroutines(); // dừng toàn bộ Coroutine đang chạy
 
         rb.linearVelocity = Vector2.zero;
         rb.bodyType = RigidbodyType2D.Kinematic;
 
-        // Dịch chuyển kiếm hơi sâu vào hitbox một chút cho đẹp
-        Vector3 hitPoint = transform.position;
-        Vector3 enemyCenter = enemyCollider.transform.position;
-        transform.position = Vector3.Lerp(hitPoint, enemyCenter, enemyPenetrationDepth);
+        Vector3 hitPoint = transform.position; // lưu vị trí va chạm hiện tại của kiếm
+        Vector3 enemyCenter = enemyCollider.transform.position; // lấy vị trí trung tâm của quái
+        transform.position = Vector3.Lerp(hitPoint, enemyCenter, enemyPenetrationDepth); //Vector3.Lerp(a, b, t) sẽ lấy một điểm nằm giữa a và b
 
-        // Biến kiếm thành con của hitbox/quái để di chuyển theo quái
-        transform.SetParent(enemyCollider.transform);
+        transform.SetParent(enemyCollider.transform); // gắn kiếm vào quái 
         Debug.Log("Kiếm đã găm vào quái: " + enemyCollider.name);
     }
 
-    // --- HÀM PUBLIC ĐỂ PLAYER ĐỔI CHẾ ĐỘ TỪ XA ---
     public void SetMode(SwordMode mode) => currentMode = mode;
-
 
     void StuckInWall()
     {

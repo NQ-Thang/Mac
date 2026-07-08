@@ -32,7 +32,7 @@ public class PlayerMovement : MonoBehaviour
     private float originalGravity;
 
     // Thuộc tính để các Script combat/dash truy cập công khai
-    public bool isDashing { get; set; } = false;
+    public bool isDashing { get; set; } = false; //cách viết ngắn gọn thay cho việc khai báo một biến và hai hàm get/set
 
     void Start()
     {
@@ -66,20 +66,20 @@ public class PlayerMovement : MonoBehaviour
         HandleJump();
     }
 
-    void GatherInput()
+    void GatherInput() // đọc input từ bàn phím
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
         if (Input.GetButtonDown("Jump")) jumpInput = true;
     }
 
-    void MovePlayer()
+    void MovePlayer() // di chuyển nhân vật dựa trên input
     {
         rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
-        if (horizontalInput > 0) transform.localScale = new Vector3(1f, 1f, 1f);
-        else if (horizontalInput < 0) transform.localScale = new Vector3(-1f, 1f, 1f);
+        if (horizontalInput > 0) transform.localScale = new Vector3(1f, 1f, 1f); // lật nhân vật sang phải
+        else if (horizontalInput < 0) transform.localScale = new Vector3(-1f, 1f, 1f); // lật nhân vật sang trái
     }
 
-    void HandleJump()
+    void HandleJump() // xử lý nhảy và wall jump
     {
         if (jumpInput)
         {
@@ -87,45 +87,48 @@ public class PlayerMovement : MonoBehaviour
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             }
-            else if (isWallSliding || (IsTouchingWall() && !IsGrounded()))
+            else if (isWallSliding || (IsTouchingWall() && !IsGrounded())) // wall jump
             {
                 isWallJumping = true;
-                wallJumpDirection = -transform.localScale.x;
+                wallJumpDirection = -transform.localScale.x; // xác định hướng nhảy, ngược với hướng đang chạm tường
                 rb.linearVelocity = new Vector2(wallJumpDirection * wallJumpForce.x, wallJumpForce.y);
                 wallJumpCounter = wallJumpDuration;
+                // wallJumpDuration: luôn giữ nguyên, đây là thời gian quy định cho một lần Wall Jump.
+                // wallJumpCounter: mỗi khi bắt đầu Wall Jump sẽ được gán bằng wallJumpDuration, rồi giảm dần về 0.
             }
         }
 
-        jumpInput = false;
+        jumpInput = false; // reset jump input sau khi xử lý xong tránh nhảy liên tục
 
         if (isWallJumping)
         {
-            wallJumpCounter -= Time.fixedDeltaTime;
+            wallJumpCounter -= Time.fixedDeltaTime; // Time.fixedDeltaTime = 0.02 giây
             if (wallJumpCounter <= 0) isWallJumping = false;
         }
     }
 
-    void HandleWallSlideState()
+    void HandleWallSlideState() // xác định trạng thái Wall Slide và Wall Freeze
     {
-        if (isWallJumping)
+        if (isWallJumping) // nếu đang wall jump thì không xử lí gì
         {
             isWallSliding = false;
             isWallFreezing = false;
             return;
         }
 
-        bool currentlyTouchingWall = IsTouchingWall() && !IsGrounded();
+        bool currentlyTouchingWall = IsTouchingWall() && !IsGrounded(); // kiêm tra xem nhân vật có đang chạm tường và không chạm đất hay không
 
         if (currentlyTouchingWall)
         {
-            float wallDirection = transform.localScale.x;
+            float wallDirection = transform.localScale.x; // hướng của tường là hướng mà nhân vật đang đối diện, dựa vào hướng nhân vật đang nhìn
 
+            // nếu đang nhảy và hướng về phía tường và không di chuyển ngang thì không wall slide
             if (rb.linearVelocity.y > 0.1f && (Mathf.Sign(rb.linearVelocity.x) == wallDirection || Mathf.Abs(rb.linearVelocity.x) < 0.1f))
             {
                 isWallSliding = false;
                 isWallFreezing = false;
             }
-            else
+            else // nếu đang rơi hoặc di chuyển ngang thì wall slide
             {
                 isWallSliding = true;
                 if (!isWallFreezing && rb.linearVelocity.y <= 0.1f)
@@ -134,15 +137,15 @@ public class PlayerMovement : MonoBehaviour
                 }
             }
         }
-        else
+        else // nhân vật đã rời khỏi tường
         {
             isWallSliding = false;
             isWallFreezing = false;
-            StopCoroutine(WallCatchRoutine());
+            StopCoroutine(WallCatchRoutine()); // tạo khoảng dừng ngắn trước khi bắt đầu trượt xuống
         }
     }
 
-    IEnumerator WallCatchRoutine()
+    IEnumerator WallCatchRoutine() // tạo khoảng dừng ngắn trước khi bắt đầu trượt xuống
     {
         isWallFreezing = true;
         isWallSliding = true;
@@ -150,7 +153,7 @@ public class PlayerMovement : MonoBehaviour
         isWallFreezing = false;
     }
 
-    void HandleWallSlidePhysics()
+    void HandleWallSlidePhysics() // tạo hiệu ứng trượt xuống tường, giảm tốc độ rơi khi đang wall slide
     {
         if (isWallSliding)
         {
