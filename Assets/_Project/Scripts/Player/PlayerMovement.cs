@@ -37,7 +37,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        originalGravity = rb.gravityScale;
+        //originalGravity = rb.gravityScale;
     }
 
     void Update()
@@ -52,12 +52,12 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isDashing) return;
 
-        if (!isWallJumping)
+        if (!isWallJumping) // nếu không đang wall jump thì mới di chuyển nhân vật, nếu đang wall jump thì giữ nguyên vận tốc wall jump
         {
             MovePlayer();
         }
 
-        if (rb.linearVelocity.y < 0)
+        if (rb.linearVelocity.y < 0) // nếu đang rơi thì tăng tốc độ rơi
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }

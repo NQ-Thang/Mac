@@ -21,9 +21,9 @@ public class PlayerCombat : MonoBehaviour
 
     void Update()
     {
-        if (movement.isDashing) return;
+        if (movement.isDashing) return; // nếu đang dash thì không thể chém
 
-        // Chỉ cho chém thường nếu chuột trái xuống VÀ kiếm KHÔNG ở ngoài vách/quái
+        // Chỉ cho chém thường nếu không có PlayerSwordTech hoặc kiếm không active, không đang bay
         if (Input.GetMouseButtonDown(0) && (swordTech == null || !swordTech.HasActiveSword()))
         {
             attackInput = true;
@@ -51,17 +51,17 @@ public class PlayerCombat : MonoBehaviour
                     enemyHealth.TakeDamage(attackDamage, transform.position);
                 }
             }
-            attackInput = false;
+            attackInput = false; // reset đòn đánh để không chém liên tục
         }
     }
 
     void RotateAttackPointTowardsMouse()
     {
-        if (attackPoint == null) return;
-        Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorldPosition.z = 0f;
-        Vector3 direction = (mouseWorldPosition - transform.position).normalized;
-        attackPoint.position = transform.position + direction * attackOffsetDistance;
+        if (attackPoint == null) return; // Nếu attackPoint chưa được gán, không làm gì cả
+        Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition); // lấy vị trí chuột ở màn hình
+        mouseWorldPosition.z = 0f; // bỏ trục z
+        Vector3 direction = (mouseWorldPosition - transform.position).normalized; // tính hướng chuột
+        attackPoint.position = transform.position + direction * attackOffsetDistance; // đặt vị trí attackPoint cách nhân vật theo hướng chuột
     }
 
     private void OnDrawGizmos()
