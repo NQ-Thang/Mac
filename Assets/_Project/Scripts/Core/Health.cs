@@ -44,17 +44,22 @@ public class Health : MonoBehaviour
 
     public void TakeDamage(float damageAmount, Vector2 attackerPosition)
     {
-        // Nếu là Player và đang trong trạng thái bất tử thì bỏ qua nhận dame
         if (isPlayer && isInvincible) return;
 
         currentHealth -= damageAmount;
-        Debug.Log(gameObject.name + "Mau con: " + currentHealth);
+        Debug.Log(gameObject.name + " Mau con: " + currentHealth);
+
+        VoTri voTri = GetComponent<VoTri>();
+
+        if (voTri != null)
+        {
+            voTri.OnHit();
+        }
 
         if (currentHealth > 0)
         {
             TriggerKnockBack(attackerPosition);
 
-            // Nếu là Player thì kích hoạt thêm chu kỳ bất tử + nhấp nháy
             if (isPlayer)
             {
                 StartCoroutine(BecomeInvincibleRoutine());

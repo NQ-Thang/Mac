@@ -12,12 +12,19 @@ public class VoTri : WalkerPassive
     [SerializeField] private float surpriseTime = 0.4f;
     [SerializeField] private float questionTime = 1f;
 
-    private bool isRunningAway = false;
-    private bool isSurprised = false;
+    private bool isRunningAway;
+    private bool isSurprised;
 
     protected override void Start()
     {
         base.Start();
+
+        if (player == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null)
+                player = p.transform;
+        }
 
         if (questionMark != null)
             questionMark.SetActive(false);
@@ -40,7 +47,8 @@ public class VoTri : WalkerPassive
     {
         if (player == null) return;
 
-        float distance = Vector2.Distance(transform.position, player.position);
+        float distance =
+            Vector2.Distance(transform.position, player.position);
 
         if (distance <= detectRange)
         {
@@ -58,26 +66,26 @@ public class VoTri : WalkerPassive
 
     private void FacePlayer()
     {
-        bool playerOnRight = player.position.x > transform.position.x;
+        bool playerRight =
+            player.position.x > transform.position.x;
 
-        if (playerOnRight && !movingRight)
-            ChangeDirection();
-        else if (!playerOnRight && movingRight)
+        if (playerRight != movingRight)
             ChangeDirection();
     }
 
     private void FaceAwayFromPlayer()
     {
-        bool playerOnRight = player.position.x > transform.position.x;
+        bool playerRight =
+            player.position.x > transform.position.x;
 
-        if (playerOnRight && movingRight)
-            ChangeDirection();
-        else if (!playerOnRight && !movingRight)
+        if (playerRight == movingRight)
             ChangeDirection();
     }
 
     public void OnHit()
     {
+        Debug.Log("VoTri Hit!");
+
         StopAllCoroutines();
         StartCoroutine(SurprisedRoutine());
     }
@@ -88,7 +96,6 @@ public class VoTri : WalkerPassive
 
         rb.linearVelocity = Vector2.zero;
 
-        // Quay mặt nhìn player
         FacePlayer();
 
         yield return new WaitForSeconds(surpriseTime);
@@ -101,10 +108,9 @@ public class VoTri : WalkerPassive
         if (questionMark != null)
             questionMark.SetActive(false);
 
-        // Quay đầu chạy tiếp
         FaceAwayFromPlayer();
 
-        isSurprised = false;
         isRunningAway = true;
+        isSurprised = false;
     }
 }
