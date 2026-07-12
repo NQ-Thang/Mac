@@ -180,8 +180,12 @@ public class Sword : MonoBehaviour
         isStuck = true;
         isReturning = false;
         StopAllCoroutines();
-        rb.linearVelocity = Vector2.zero;
-        rb.bodyType = RigidbodyType2D.Kinematic;
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f; // Triệt tiêu gia tốc xoay
+            rb.bodyType = RigidbodyType2D.Kinematic; // Khóa vật lý không cho rơi/chìm
+        }
     }
 
     IEnumerator DelayStuckRoutine()
@@ -201,6 +205,10 @@ public class Sword : MonoBehaviour
 
     public void FreezeSword()
     {
+        isReturning = false; // TẮT TRẠNG THÁI THU HỒI để kiếm không tự Destroy giữa chừng
+        isStopped = true;
+        StopAllCoroutines();
+
         Rigidbody2D swordRb = GetComponent<Rigidbody2D>();
         if (swordRb != null)
         {

@@ -18,6 +18,10 @@ public class PlayerSwordTech : MonoBehaviour
     private Vector2 dashTargetPosition;
     private float originalGravity;
 
+    //[Header("Dash Safety")]
+    //[SerializeField] private float maxDashDuration = 0.25f; // Thời gian Dash tối đa trước khi tự reset
+    //private float currentDashTimer = 0f;
+
     [Header("Dash Attack Settings")]
     [SerializeField] private int dashDamage = 2;
     [SerializeField] private float dashDamageRadius = 0.6f;
@@ -112,6 +116,8 @@ public class PlayerSwordTech : MonoBehaviour
             rb.gravityScale = 0f;
             enemiesHitDuringDash.Clear();
 
+            //currentDashTimer = 0f;
+
             if (playerHealth != null) playerHealth.SetDashInvincibility(true);
             if (playerSprite != null) playerSprite.enabled = false;
         }
@@ -141,7 +147,13 @@ public class PlayerSwordTech : MonoBehaviour
 
     void CheckDashArrival()
     {
-        if (activeSword == null) return;
+        if (activeSword == null)
+        {
+            ResetDashState();
+            return;
+        }
+
+        //currentDashTimer += Time.deltaTime;
 
         float distanceToTarget = Vector2.Distance(transform.position, dashTargetPosition);
 
@@ -176,14 +188,9 @@ public class PlayerSwordTech : MonoBehaviour
 
             ResetDashState();
         }
-        else if (activeSword.transform.parent == null)
+        else if (distanceToTarget < 1.5f && (movement.IsGrounded() || movement.IsTouchingWall()))
         {
-            bool isDashingDown = rb.linearVelocity.y < -0.1f;
-            bool canCheckObstacles = distanceToTarget < 1.5f;
-            if ((canCheckObstacles && isDashingDown && movement.IsGrounded()) || (canCheckObstacles && movement.IsTouchingWall()))
-            {
-                ResetDashState();
-            }
+            ResetDashState(); // Thoát trạng thái Dash ngay lập tức khi va chạm
         }
     }
 

@@ -72,6 +72,11 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetButtonDown("Jump")) jumpInput = true;
     }
 
+    public void ApplyKnockbackStun(float duration)
+    {
+        isWallJumping = true;
+        wallJumpCounter = duration;
+    }
     void MovePlayer() // di chuyển nhân vật dựa trên input
     {
         rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);

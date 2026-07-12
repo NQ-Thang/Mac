@@ -12,8 +12,8 @@ public class Health : MonoBehaviour
     [SerializeField] private float flashInterval = 0.15f;     // Tốc độ nhấp nháy
     private bool isInvincible = false;
     private SpriteRenderer spriteRenderer;
-    private int normalPlayerLayer;
-    private int invinciblePlayerLayer;
+    private int normalPlayerLayer; // id của Layer "Player"
+    private int invinciblePlayerLayer; // id của Layer "PlayerInvincible"
 
     [Header("KnockBack")]
     [SerializeField] private float knockbackForceX = 8f;
@@ -36,15 +36,14 @@ public class Health : MonoBehaviour
         {
             playerMovement = GetComponent<PlayerMovement>();
 
-            // Lấy ID của các Layer (Hãy chắc chắn bạn đã tạo 2 Layer này trong Unity)
-            normalPlayerLayer = LayerMask.NameToLayer("Player");
-            invinciblePlayerLayer = LayerMask.NameToLayer("PlayerInvincible");
+            normalPlayerLayer = LayerMask.NameToLayer("Player"); // id của Layer "Player"   
+            invinciblePlayerLayer = LayerMask.NameToLayer("PlayerInvincible"); // id của Layer "PlayerInvincible"
         }
     }
 
     public void TakeDamage(float damageAmount, Vector2 attackerPosition)
     {
-        if (isPlayer && isInvincible) return;
+        if (isPlayer && isInvincible) return; // Nếu là player và đang trong trạng thái bất tử, không nhận sát thương
 
         currentHealth -= damageAmount;
         Debug.Log(gameObject.name + " Mau con: " + currentHealth);
@@ -87,38 +86,42 @@ public class Health : MonoBehaviour
     {
         if (isPlayer && playerMovement != null)
         {
-            typeof(PlayerMovement).GetField("isWallJumping", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(playerMovement, true);
-            typeof(PlayerMovement).GetField("wallJumpCounter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(playerMovement, knockbackDuration);
+            playerMovement.ApplyKnockbackStun(knockbackDuration);
         }
         yield return new WaitForSeconds(knockbackDuration);
     }
 
-    // COROUTINE XỬ LÝ BẤT TỬ & NHẤP NHÁY
     private IEnumerator BecomeInvincibleRoutine()
     {
         isInvincible = true;
 
-        // Đổi sang Layer bất tử để đi xuyên qua quái (nhớ cài đặt Matrix Collision trong Project Settings)
-        gameObject.layer = invinciblePlayerLayer;
+        gameObject.layer = invinciblePlayerLayer; // chuyển layer sang "PlayerInvincible" để tránh va chạm với kẻ thù
 
         float timer = 0f;
-        while (timer < invincibleDuration)
+        while (timer < invincibleDuration) // chạy trong khoảng thời gian bất tử cho đến khi hết invincibleDuration
         {
             if (spriteRenderer != null)
             {
-                spriteRenderer.enabled = !spriteRenderer.enabled; // Tắt/Bật hiển thị hình ảnh
+                Color color = spriteRenderer.color;
+                color.a = (Mathf.Approximately(color.a, 1f)) ? 0.3f : 1f; // Chuyển đổi giữa rõ nét (1.0) và bán trong suốt (0.3), a -> alpha
+                spriteRenderer.color = color;
             }
-            yield return new WaitForSeconds(flashInterval);
+            yield return new WaitForSeconds(flashInterval); // tạm dừng coroutine trong khoảng thời gian flashInterval trước khi tiếp tục 
             timer += flashInterval;
         }
 
-        // Trả lại trạng thái bình thường khi hết thời gian
-        if (spriteRenderer != null) spriteRenderer.enabled = true;
-        gameObject.layer = normalPlayerLayer;
-        isInvincible = false;
+        // sau khi kết thúc vòng lặp
+        if (spriteRenderer != null)
+        {
+            Color finalColor = spriteRenderer.color;
+            finalColor.a = 1f; // Đảm bảo trả lại độ rõ nét 100% khi hết bất tử
+            spriteRenderer.color = finalColor;
+        }
+        gameObject.layer = normalPlayerLayer; // chuyển layer trở lại "Player" để nhận va chạm với kẻ thù
+        isInvincible = false; 
     }
 
-    public void SetDashInvincibility(bool isInvincible)
+    public void SetDashInvincibility(bool isInvincible) // Hàm này được gọi từ PlayerDash.cs để đặt trạng thái bất tử khi dash
     {
         if (isPlayer)
         {
@@ -132,7 +135,6 @@ public class Health : MonoBehaviour
         if (isPlayer)
         {
             currentHealth = maxHealth;
-            // Nếu chết thì hồi sinh ngay lập tức phải reset lại layer và hiển thị cho chắc chắn
             if (spriteRenderer != null) spriteRenderer.enabled = true;
             gameObject.layer = normalPlayerLayer;
             isInvincible = false;
