@@ -4,66 +4,66 @@ using UnityEngine;
 public class PlayerAnima : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private int maxSoul = 99;
-    [SerializeField] private int soulPerHit = 11; // Lượng linh lực nhận được khi chém trúng quái
+    [SerializeField] private int maxAnima = 100;
+    [SerializeField] private int animaPerHit = 20; // Lượng linh lực nhận được khi chém trúng quái
 
     [Header("Current State")]
-    [SerializeField] private int currentSoul = 0;
+    [SerializeField] private int currentAnima = 0;
 
     // Sự kiện thông báo khi Linh lực thay đổi (dùng cho UI cập nhật sau này)
-    // Parameter: (int currentSoul, int maxSoul)
-    public event Action<int, int> OnSoulChanged;
+    // Parameter: (int currentAnima, int maxAnima)
+    public event Action<int, int> OnAnimaChanged;
 
-    public int CurrentSoul => currentSoul;
-    public int MaxSoul => maxSoul;
+    public int CurrentAnima => currentAnima;
+    public int MaxAnima => maxAnima;
 
     private void Start()
     {
         // Khởi tạo linh lực ban đầu (bằng 0 hoặc max tùy bạn chọn)
-        currentSoul = 0;
-        OnSoulChanged?.Invoke(currentSoul, maxSoul);
+        currentAnima = 0;
+        OnAnimaChanged?.Invoke(currentAnima, maxAnima);
     }
 
     /// <summary>
     /// Cộng thêm linh lực khi chém trúng kẻ địch.
     /// </summary>
-    public void AddSoul(int amount)
+    public void AddAnima(int amount)
     {
         if (amount <= 0) return;
 
-        currentSoul = Mathf.Clamp(currentSoul + amount, 0, maxSoul);
-        OnSoulChanged?.Invoke(currentSoul, maxSoul);
+        currentAnima = Mathf.Clamp(currentAnima + amount, 0, maxAnima); // chặn anima luôn trên 0 và dưới maxAnima
+        OnAnimaChanged?.Invoke(currentAnima, maxAnima);
     }
 
     /// <summary>
-    /// overload hỗ trợ cộng mặc định theo soulPerHit
+    /// overload hỗ trợ cộng mặc định theo animaPerHit
     /// </summary>
-    public void AddSoulFromHit()
+    public void AddAnimaFromHit()
     {
-        AddSoul(soulPerHit);
+        AddAnima(animaPerHit);
     }
 
     /// <summary>
     /// Kiểm tra xem người chơi có đủ linh lực để dùng kỹ năng không.
     /// </summary>
-    public bool HasEnoughSoul(int amount)
+    public bool HasEnoughAnima(int amount)
     {
-        return currentSoul >= amount;
+        return currentAnima >= amount;
     }
 
     /// <summary>
     /// Khấu trừ linh lực khi dùng kỹ năng.
     /// </summary>
     /// <returns>True nếu trừ thành công, False nếu không đủ linh lực.</returns>
-    public bool ConsumeSoul(int amount)
+    public bool ConsumeAnima(int amount)
     {
-        if (!HasEnoughSoul(amount))
+        if (!HasEnoughAnima (amount))
         {
             return false;
         }
 
-        currentSoul -= amount;
-        OnSoulChanged?.Invoke(currentSoul, maxSoul);
+        currentAnima -= amount;
+        OnAnimaChanged?.Invoke(currentAnima, maxAnima);
         return true;
     }
 }

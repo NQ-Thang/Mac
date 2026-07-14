@@ -34,11 +34,13 @@ public class PlayerCombat : MonoBehaviour
 
     private PlayerMovement movement;
     private PlayerSwordTech swordTech; // Cần check xem kiếm có đang ở ngoài không
+    private PlayerAnima anima; 
     private bool attackInput;
 
     void Start()
     {
         movement = GetComponent<PlayerMovement>();
+        anima = GetComponent<PlayerAnima>();
         swordTech = GetComponent<PlayerSwordTech>();
     }
 
@@ -75,6 +77,10 @@ public class PlayerCombat : MonoBehaviour
                 if (enemyHealth != null)
                 {
                     enemyHealth.TakeDamage(attackDamage, transform.position);
+                    if(anima != null)
+                    {
+                        anima.AddAnimaFromHit();
+                    }
                 }
             }
             attackInput = false; // reset đòn đánh để không chém liên tục
