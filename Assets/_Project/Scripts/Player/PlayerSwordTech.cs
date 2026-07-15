@@ -9,12 +9,6 @@ using UnityEngine;
 /// </summary>
 public class PlayerSwordTech : MonoBehaviour
 {
-    [Header("Sword Mode Management")]
-    /// <summary>
-    /// Chế độ ném kiếm mặc định được ưu tiên (StickToEnemies: Găm vào quái / PierceAll: Xuyên qua tất cả).
-    /// </summary>
-    [SerializeField] private Sword.SwordMode preferredSwordMode = Sword.SwordMode.StickToEnemies;
-
     [Header("Ranged Attack (Sword Throw)")]
     /// <summary>
     /// Khoảng cách tối thiểu để người chơi tự động nhặt lại kiếm khi đi lại gần.
@@ -54,10 +48,15 @@ public class PlayerSwordTech : MonoBehaviour
     /// </summary>
     [SerializeField] private LayerMask enemyLayer;
 
+    [Header("Anima Cost Settings")]
+    [SerializeField] private int dashAnimaCost = 0;  // Số Anima tiêu tốn khi Dash
+    [SerializeField] private int throwAnimaCost = 0;   
+
     private SpriteRenderer playerSprite;
     private Rigidbody2D rb;
     private PlayerMovement movement;
     private Health playerHealth;
+    private PlayerAnima anima;
     private List<Collider2D> enemiesHitDuringDash = new List<Collider2D>();
 
     void Start()
@@ -65,6 +64,7 @@ public class PlayerSwordTech : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         movement = GetComponent<PlayerMovement>();
         playerHealth = GetComponent<Health>();
+        anima = GetComponent<PlayerAnima>();
         originalGravity = rb.gravityScale;
         playerSprite = GetComponent<SpriteRenderer>();
     }
@@ -79,14 +79,6 @@ public class PlayerSwordTech : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(1)) throwInput = true;
             if (Input.GetKeyDown(KeyCode.R)) RecallSword();
-
-            if (Input.GetKeyDown(KeyCode.Q))
-            {
-                preferredSwordMode = (preferredSwordMode == Sword.SwordMode.PierceAll)
-                    ? Sword.SwordMode.StickToEnemies
-                    : Sword.SwordMode.PierceAll;
-                Debug.Log("Đã đổi chế độ ném kiếm sang: " + preferredSwordMode);
-            }
 
             CheckAutoPickUpSword();
         }
@@ -149,6 +141,19 @@ public class PlayerSwordTech : MonoBehaviour
 
         if (swordScript != null && swordScript.CanDashTo)
         {
+            // KIỂM TRA & TIÊU HAO ANIMA KHI DASH
+            if (anima != null)
+            {
+                if (!anima.HasEnoughAnima(dashAnimaCost))
+                {
+                    Debug.Log("Không đủ Anima để thực hiện Dash!");
+                    return; // Không đủ Anima -> Hủy Dash
+                }
+
+                // Trừ Anima
+                anima.ConsumeAnima(dashAnimaCost);
+            }
+
             swordScript.FreezeSword();
             dashTargetPosition = activeSword.transform.position;
 
@@ -166,6 +171,16 @@ public class PlayerSwordTech : MonoBehaviour
     /// </summary>
     void ThrowNewSword()
     {
+        if (throwAnimaCost > 0 && anima != null)
+        {
+            if (!anima.HasEnoughAnima(throwAnimaCost))
+            {
+                Debug.Log("Không đủ Anima để ném kiếm!");
+                return;
+            }
+            anima.ConsumeAnima(throwAnimaCost);
+        }
+
         Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPosition.z = 0f;
         Vector2 throwDirection = (mouseWorldPosition - transform.position).normalized;
@@ -174,7 +189,6 @@ public class PlayerSwordTech : MonoBehaviour
         Sword newSwordScript = activeSword.GetComponent<Sword>();
         if (newSwordScript != null)
         {
-            newSwordScript.SetMode(preferredSwordMode);
             newSwordScript.Launch(throwDirection, transform);
         }
     }

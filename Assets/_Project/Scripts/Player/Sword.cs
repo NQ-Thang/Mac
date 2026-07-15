@@ -7,28 +7,8 @@ using System.Collections;
 /// </summary>
 public class Sword : MonoBehaviour
 {
-    /// <summary>
-    /// Định nghĩa các chế độ ném kiếm.
-    /// </summary>
-    public enum SwordMode
-    {
-        /// <summary>
-        /// Chế độ xuyên qua tất cả kẻ địch mà không bị găm lại.
-        /// </summary>
-        PierceAll,
-
-        /// <summary>
-        /// Chế độ cắm/găm kiếm trực tiếp vào thân kẻ địch khi trúng đòn.
-        /// </summary>
-        StickToEnemies
-    }
 
     [Header("Sword Mode Settings")]
-    /// <summary>
-    /// Chế độ hiện tại của thanh kiếm.
-    /// </summary>
-    [SerializeField] private SwordMode currentMode = SwordMode.StickToEnemies;
-
     /// <summary>
     /// Tốc độ bay của thanh kiếm khi vừa được ném ra.
     /// </summary>
@@ -59,12 +39,6 @@ public class Sword : MonoBehaviour
     /// Sát thương gây ra cho kẻ địch khi kiếm va chạm.
     /// </summary>
     [SerializeField] private float swordDamage = 30f;
-
-    /// <summary>
-    /// Tỉ lệ độ sâu găm vào thân quái (từ 0 đến 1) dùng cho phép toán dịch chuyển Lerp.
-    /// </summary>
-    [Range(0f, 1f)]
-    [SerializeField] private float enemyPenetrationDepth = 0.4f;
 
     private Rigidbody2D rb;
     private Vector3 startPosition;
@@ -192,7 +166,6 @@ public class Sword : MonoBehaviour
                 enemyHealth.TakeDamage(swordDamage, transform.position);
             }
 
-            HandleSwordSticking(other);
         }
 
         if (((1 << other.gameObject.layer) & groundLayer) != 0)
@@ -201,60 +174,6 @@ public class Sword : MonoBehaviour
             if (!isStuck) StartCoroutine(DelayStuckRoutine());
         }
     }
-
-    /// <summary>
-    /// Kiểm tra chế độ ném và các điều kiện vùng cấm găm để quyết định xem kiếm có được phép cắm vào kẻ địch hay không.
-    /// </summary>
-    /// <param name="other">Collider2D của kẻ địch bị đâm trúng.</param>
-    private void HandleSwordSticking(Collider2D other)
-    {
-        AnchorPointEnemy anchor = other.GetComponent<AnchorPointEnemy>();
-        if (anchor != null) return; // nếu va chạm vào AnchorPointEnemy thì thoát hàm luôn
-
-        if (currentMode == SwordMode.PierceAll) return; // nếu kiếm đang ở chế độ PierceAll thì không găm vào quái, thoát hàm luôn
-
-        if (currentMode == SwordMode.StickToEnemies)
-        {
-            if (isReturning) return;
-
-            // các collider có tag "SwordIgnore" hoặc tên chứa "Body" hoặc "Legs" sẽ không cho phép kiếm găm vào
-            if (other.CompareTag("SwordIgnore") || other.gameObject.name.Contains("Body") || other.gameObject.name.Contains("Legs"))
-            {
-                Debug.Log("Kiếm xuyên qua vùng không cho phép găm: " + other.gameObject.name);
-                return;
-            }
-
-            StuckInEnemy(other);
-        }
-    }
-
-    /// <summary>
-    /// Thực hiện gắn thanh kiếm thành con (Child) của kẻ địch và dịch chuyển tâm kiếm hơi sâu vào thân quái.
-    /// </summary>
-    /// <param name="enemyCollider">Collider2D của kẻ địch.</param>
-    private void StuckInEnemy(Collider2D enemyCollider)
-    {
-        CanBePickedUp = true;
-        isStuck = true;
-        isReturning = false;
-        StopAllCoroutines(); // dừng toàn bộ Coroutine đang chạy
-
-        rb.linearVelocity = Vector2.zero;
-        rb.bodyType = RigidbodyType2D.Kinematic;
-
-        Vector3 hitPoint = transform.position; // lưu vị trí va chạm hiện tại của kiếm
-        Vector3 enemyCenter = enemyCollider.transform.position; // lấy vị trí trung tâm của quái
-        transform.position = Vector3.Lerp(hitPoint, enemyCenter, enemyPenetrationDepth); //Vector3.Lerp(a, b, t) sẽ lấy một điểm nằm giữa a và b
-
-        transform.SetParent(enemyCollider.transform); // gắn kiếm vào quái 
-        Debug.Log("Kiếm đã găm vào quái: " + enemyCollider.name);
-    }
-
-    /// <summary>
-    /// Cài đặt chế độ bay cho thanh kiếm (StickToEnemies hoặc PierceAll).
-    /// </summary>
-    /// <param name="mode">Chế độ ném muốn thiết lập.</param>
-    public void SetMode(SwordMode mode) => currentMode = mode;
 
     /// <summary>
     /// Khóa thanh kiếm cố định tại vị trí cắm vào tường hoặc mặt đất, triệt tiêu gia tốc vật lý.
