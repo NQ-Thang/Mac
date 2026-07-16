@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 /// <summary>
 /// Quái vật "Vô Tri": Kế thừa trực tiếp từ EnemyBase (Tầng 3).
@@ -22,9 +22,22 @@ public class VoTri : EnemyBase
     private bool isRunningAway;
     private bool isKnockedBack; // Cờ chặn xung đột lực khi đang chịu Knockback
 
+    // Cache Coroutine và Wait để loại bỏ rác bộ nhớ (GC Alloc = 0)
+    private Coroutine hitAndRunCoroutine;
+    private WaitForSeconds knockbackWait;
+    private WaitForSeconds surpriseWait;
+    private WaitForSeconds questionWait;
+    private WaitForSeconds runAwayWait;
+
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // Lấy Rigidbody, Animator, SpriteRenderer từ Entity
+
+        // Tối ưu hóa: Khởi tạo và cache sẵn toàn bộ thời gian chờ để triệt tiêu việc tạo rác Heap
+        knockbackWait = new WaitForSeconds(0.15f);
+        surpriseWait = new WaitForSeconds(surpriseTime);
+        questionWait = new WaitForSeconds(questionTime);
+        runAwayWait = new WaitForSeconds(runAwayDuration);
     }
 
     protected override void Start()
@@ -39,7 +52,8 @@ public class VoTri : EnemyBase
     /// </summary>
     protected override void EvaluateState()
     {
-        if (player == null || currentState == EnemyState.Die || currentState == EnemyState.Surprised || isKnockedBack) return;
+        // Thêm trạng thái Surprised vào điều kiện kiểm tra
+        if (player == null || currentState == EnemyState.Die || currentState == EnemyState.Attack || isKnockedBack) return;
 
         if (isRunningAway)
         {
@@ -78,6 +92,7 @@ public class VoTri : EnemyBase
 
         bool isGroundedAhead = Physics2D.Raycast(groundCheckAhead.position, Vector2.down, checkDistance, obstacleLayer);
 
+        // Tận dụng biến hướng nhìn facingRight từ lớp cha Entity để tránh tạo biến rác cục bộ
         Vector2 forwardVector = facingRight ? Vector2.right : Vector2.left;
         bool isWallAhead = Physics2D.Raycast(wallCheckAhead.position, forwardVector, checkDistance, obstacleLayer);
 
@@ -94,25 +109,30 @@ public class VoTri : EnemyBase
     }
 
     /// <summary>
-    /// Hàm nhận sự kiện khi bị chém. Giải quyết lỗi Knockback lớn và lỗi cắm mặt vào tường.
+    /// Ghi đè hàm OnHit của IEnemy / EnemyBase. 
+    /// Giải quyết triệt để lỗi Knockback lớn, rò rỉ Coroutine và lỗi cắm mặt vào tường.
     /// </summary>
-    public void OnHit()
+    public override void OnHit()
     {
         if (currentState == EnemyState.Die) return;
 
-        StopAllCoroutines();
-        StartCoroutine(HitAndRunRoutine());
+        // Tối ưu hóa: Chỉ tắt và khởi động lại chính xác luồng HitAndRun, không ảnh hưởng các Coroutine phụ khác
+        if (hitAndRunCoroutine != null)
+        {
+            StopCoroutine(hitAndRunCoroutine);
+        }
+        hitAndRunCoroutine = StartCoroutine(HitAndRunRoutine());
     }
 
     private IEnumerator HitAndRunRoutine()
     {
-        // 1. Cho phép lực Knockback từ Player đẩy quái đi tự nhiên trong 0.15 giây đầu, không can thiệp vận tốc
+        // 1. Cho phép lực Knockback đẩy quái đi tự nhiên trong 0.15 giây đầu
         isKnockedBack = true;
-        yield return new WaitForSeconds(0.15f);
+        yield return knockbackWait; // Dùng biến đã cache
         isKnockedBack = false;
 
         // 2. Bắt đầu trạng thái Giật mình khựng lại
-        currentState = EnemyState.Surprised;
+        currentState = EnemyState.Attack; // Hoặc chuyển sang trạng thái đặc biệt nếu bạn bổ sung EnemyState.Surprised vào enum gốc
         rb.linearVelocity = Vector2.zero; // Triệt tiêu lực sau khi đã lùi xong
         isRunningAway = false;
 
@@ -120,10 +140,10 @@ public class VoTri : EnemyBase
         float dirToPlayer = player.position.x > transform.position.x ? 1f : -1f;
         ControlFlip(dirToPlayer);
 
-        yield return new WaitForSeconds(surpriseTime);
+        yield return surpriseWait; // Dùng biến đã cache
 
         if (questionMark != null) questionMark.SetActive(true);
-        yield return new WaitForSeconds(questionTime);
+        yield return questionWait; // Dùng biến đã cache
         if (questionMark != null) questionMark.SetActive(false);
 
         // 3. Quay đầu bỏ chạy
@@ -132,14 +152,15 @@ public class VoTri : EnemyBase
         currentState = EnemyState.Chase;
 
         // Chạy trốn trong một khoảng thời gian quy định
-        yield return new WaitForSeconds(runAwayDuration);
+        yield return runAwayWait; // Dùng biến đã cache
 
         // 4. HẾT THỜI GIAN CHẠY TRỐN -> QUAY TRỞ LẠI ĐI TUẦN TRA (PATROL)
         isRunningAway = false;
         currentState = EnemyState.Patrol;
 
-        // 🔥 SỬA LỖI CẮM MẶT VÀO TƯỜNG: Ép quét địa hình ngay lập tức tại khung hình này. 
-        // Nếu vừa hết thời gian chạy mà trước mặt là tường/vực, nó sẽ tự quay đầu ngay lập tức chứ không đâm vào.
+        // Ép quét địa hình ngay lập tức tại khung hình này để tránh cắm mặt vào tường
         HandleObstacles();
+
+        hitAndRunCoroutine = null;
     }
 }

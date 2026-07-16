@@ -998,7 +998,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8516755318907503253, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: jumpForce
-      value: 10
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 8516755318907503253, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: attackRange
@@ -1006,7 +1006,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8516755318907503253, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: fallMultiplier
-      value: 3
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 8516755318907503253, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: attackOffsetDistance

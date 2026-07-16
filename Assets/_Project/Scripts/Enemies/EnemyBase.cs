@@ -4,7 +4,7 @@ using UnityEngine;
 /// Lớp nền móng cho tất cả quái vật trong game, kế thừa từ lớp gốc Entity.
 /// Quản lý hệ thống AI States, phát hiện mục tiêu và ra lệnh hành vi.
 /// </summary>
-public class EnemyBase : Entity
+public class EnemyBase : Entity, IEnemy
 {
     public enum EnemyState { Patrol, Chase, Attack, Surprised, Die }
 
@@ -29,9 +29,8 @@ public class EnemyBase : Entity
         base.Awake(); // BẮT BUỘC: Để Entity lấy Rigidbody, Animator, Health...
     }
 
-    protected override void Start()
+    protected virtual void Start()
     {
-        base.Start();
         if (rb != null) rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         if (player == null) player = GameObject.FindGameObjectWithTag("Player")?.transform;
     }
@@ -39,10 +38,8 @@ public class EnemyBase : Entity
     /// <summary>
     /// Ghi đè Update để chạy luồng điều khiển AI state của quái thay vì đọc Input.
     /// </summary>
-    protected override void Update()
+    protected virtual void Update()
     {
-        base.Update(); // Gọi luồng update chung của Entity nếu có
-
         if (currentState == EnemyState.Die || currentState == EnemyState.Surprised) return;
 
         EvaluateState();
@@ -92,5 +89,15 @@ public class EnemyBase : Entity
 
         // Gọi hàm lật mặt dùng chung đã được tối ưu ở lớp cha Entity
         ControlFlip(direction.x);
+    }
+
+    /// <summary>
+    /// Hàm phản hồi khi kẻ địch bị trúng đòn. 
+    /// Viết dạng virtual để các lớp con (như VoTri) có thể override (ghi đè) và tùy biến cơ chế riêng.
+    /// </summary>
+    public virtual void OnHit()
+    {
+        Debug.Log(gameObject.name + " bị trúng đòn!");
+        // Bạn có thể viết thêm logic chung cho mọi loại quái khi bị trúng đòn ở đây (ví dụ: tạo hạt máu, phát âm thanh...)
     }
 }

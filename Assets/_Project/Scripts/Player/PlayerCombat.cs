@@ -2,6 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Mảnh ghép quản lý cơ chế chém thường cận chiến của Người chơi.
+/// Tự động xoay vị trí chém theo hướng con trỏ chuột và gây sát thương diện rộng.
 /// </summary>
 public class PlayerCombat : MonoBehaviour
 {
@@ -14,22 +15,29 @@ public class PlayerCombat : MonoBehaviour
 
     private Player player;
     private Camera mainCamera;
+
+    //Cache sẵn mảng va chạm và bộ lọc vật lý để triệt tiêu việc sinh rác bộ nhớ (GC)
     private readonly Collider2D[] hitEnemies = new Collider2D[10];
+    private ContactFilter2D enemyContactFilter;
 
     void Start()
     {
         player = GetComponent<Player>();
         mainCamera = Camera.main;
+
+        enemyContactFilter = new ContactFilter2D();
+        enemyContactFilter.SetLayerMask(enemyLayer);
+        enemyContactFilter.useLayerMask = true;
     }
 
     void Update()
     {
-        // Sử dụng trạng thái isDashing tập trung từ component Movement phụ thuộc
-        if (player.Movement != null && player.Movement.isDashing) return;
+        if (player.Movement.isDashing) return;
 
         RotateAttackPointTowardsMouse();
 
-        if (Input.GetMouseButtonDown(0) && (player.SwordTech == null || !player.SwordTech.HasActiveSword()))
+        // Tối ưu hóa: Loại bỏ hoàn toàn so sánh null (vì Player Hub cam kết SwordTech luôn tồn tại)
+        if (Input.GetMouseButtonDown(0) && !player.SwordTech.HasActiveSword())
         {
             PerformMeleeAttack();
         }
@@ -39,11 +47,8 @@ public class PlayerCombat : MonoBehaviour
     {
         if (attackPoint == null) return;
 
-        ContactFilter2D filter = new ContactFilter2D();
-        filter.SetLayerMask(enemyLayer);
-        filter.useLayerMask = true;
-
-        int numColliders = Physics2D.OverlapCircle(attackPoint.position, attackRange, filter, hitEnemies);
+        //Sử dụng trực tiếp bộ lọc enemyContactFilter đã được cache sẵn từ Start
+        int numColliders = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyContactFilter, hitEnemies);
         bool hitAnything = false;
 
         for (int i = 0; i < numColliders; i++)
@@ -59,7 +64,8 @@ public class PlayerCombat : MonoBehaviour
             }
         }
 
-        if (hitAnything && player.Anima != null)
+        //  Gọi trực tiếp Anima từ Hub Player mà không cần check Null
+        if (hitAnything)
         {
             player.Anima.AddAnimaFromHit();
         }

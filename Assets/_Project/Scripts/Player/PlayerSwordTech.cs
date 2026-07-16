@@ -4,6 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Mảnh ghép quản lý toàn bộ kỹ năng phi kiếm và lướt tới vị trí kiếm của người chơi.
+/// Lấy toàn bộ dữ liệu vật lý và Input thông qua component trung tâm Player.
 /// </summary>
 public class PlayerSwordTech : MonoBehaviour
 {
@@ -32,15 +33,26 @@ public class PlayerSwordTech : MonoBehaviour
     private Player player;
     private Camera mainCamera;
 
+    // Cache mảng va chạm và bộ lọc vật lý để triệt tiêu việc sinh rác GC khi lướt
     private readonly Collider2D[] hitEnemiesCache = new Collider2D[15];
     private readonly List<Collider2D> enemiesHitDuringDash = new List<Collider2D>();
+    private ContactFilter2D dashDamageFilter;
+
+    // Cache Coroutine và Wait để tối ưu bộ nhớ
     private Coroutine postDashInvincibilityCoroutine;
+    private WaitForSeconds postDashInvincibleWait;
 
     void Start()
     {
         player = GetComponent<Player>();
         originalGravity = player.rb.gravityScale;
         mainCamera = Camera.main;
+
+        dashDamageFilter = new ContactFilter2D();
+        dashDamageFilter.SetLayerMask(enemyLayer);
+        dashDamageFilter.useLayerMask = true;
+
+        postDashInvincibleWait = new WaitForSeconds(0.3f);
     }
 
     void Update()
@@ -103,15 +115,13 @@ public class PlayerSwordTech : MonoBehaviour
 
         if (swordScript != null && swordScript.CanDashTo)
         {
-            if (player.Anima != null)
+            // Kiểm tra và tiêu hao nộ (Anima) - Đã bỏ check Null do Player cam kết Component này luôn tồn tại
+            if (!player.Anima.HasEnoughAnima(dashAnimaCost))
             {
-                if (!player.Anima.HasEnoughAnima(dashAnimaCost))
-                {
-                    Debug.Log("Không đủ Anima để thực hiện Dash!");
-                    return;
-                }
-                player.Anima.ConsumeAnima(dashAnimaCost);
+                Debug.Log("Không đủ Anima để thực hiện Dash!");
+                return;
             }
+            player.Anima.ConsumeAnima(dashAnimaCost);
 
             swordScript.FreezeSword();
             dashTargetPosition = activeSword.transform.position;
@@ -120,14 +130,14 @@ public class PlayerSwordTech : MonoBehaviour
             player.rb.gravityScale = 0f;
             enemiesHitDuringDash.Clear();
 
-            if (player.health != null) player.health.SetDashInvincibility(true);
-            if (player.spriteRenderer != null) player.spriteRenderer.enabled = false;
+            player.health.SetDashInvincibility(true);
+            player.spriteRenderer.enabled = false;
         }
     }
 
     void ThrowNewSword()
     {
-        if (throwAnimaCost > 0 && player.Anima != null)
+        if (throwAnimaCost > 0)
         {
             if (!player.Anima.HasEnoughAnima(throwAnimaCost))
             {
@@ -137,7 +147,7 @@ public class PlayerSwordTech : MonoBehaviour
             player.Anima.ConsumeAnima(throwAnimaCost);
         }
 
-        if (mainCamera == null) mainCamera = Camera.main;
+        // Tối ưu: Sử dụng camera đã được cache từ Start
         Vector3 mouseWorldPosition = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPosition.z = 0f;
         Vector2 throwDirection = (mouseWorldPosition - transform.position).normalized;
@@ -165,9 +175,10 @@ public class PlayerSwordTech : MonoBehaviour
             return;
         }
 
-        float sqrDistanceToTarget = (transform.position - (Vector3)dashTargetPosition).sqrMagnitude;
+        // Tối ưu hóa tính toán khoảng cách 2D bằng sqrMagnitude của Vector2
+        float sqrDistanceToTarget = ((Vector2)transform.position - dashTargetPosition).sqrMagnitude;
 
-        if (sqrDistanceToTarget < 0.25f)
+        if (sqrDistanceToTarget < 0.25f) // 0.5f * 0.5f = 0.25f
         {
             transform.position = dashTargetPosition;
             Transform swordParent = activeSword.transform.parent;
@@ -186,7 +197,7 @@ public class PlayerSwordTech : MonoBehaviour
 
             ResetDashState();
         }
-        else if (sqrDistanceToTarget < 2.25f && (player.IsGrounded() || player.IsTouchingWall()))
+        else if (sqrDistanceToTarget < 2.25f && (player.IsGrounded() || player.IsTouchingWall())) // 1.5f * 1.5f = 2.25f
         {
             ResetDashState();
         }
@@ -195,7 +206,7 @@ public class PlayerSwordTech : MonoBehaviour
     private void TriggerBounce(float bounceForce)
     {
         if (postDashInvincibilityCoroutine != null) StopCoroutine(postDashInvincibilityCoroutine);
-        postDashInvincibilityCoroutine = StartCoroutine(PostDashInvincibilityRoutine(0.3f));
+        postDashInvincibilityCoroutine = StartCoroutine(PostDashInvincibilityRoutine());
 
         ResetDashState();
 
@@ -203,26 +214,18 @@ public class PlayerSwordTech : MonoBehaviour
         player.rb.linearVelocity = new Vector2(player.rb.linearVelocity.x, bounceForce);
     }
 
-    private IEnumerator PostDashInvincibilityRoutine(float duration)
+    private IEnumerator PostDashInvincibilityRoutine()
     {
-        if (player.health != null)
-        {
-            player.health.SetDashInvincibility(true);
-            yield return new WaitForSeconds(duration);
-            player.health.SetDashInvincibility(false);
-        }
+        player.health.SetDashInvincibility(true);
+        yield return postDashInvincibleWait; // Sử dụng biến cache tránh sinh rác GC
+        player.health.SetDashInvincibility(false);
         postDashInvincibilityCoroutine = null;
     }
 
     void HandleDashDamage()
     {
-        // 🎯 TẠO BỘ LỌC CHUẨN UNITY 6: Chuyển enemyLayer thành ContactFilter2D
-        ContactFilter2D filter = new ContactFilter2D();
-        filter.SetLayerMask(enemyLayer);
-        filter.useLayerMask = true;
-
-        // Gọi hàm OverlapCircle mới với bộ lọc filter
-        int numColliders = Physics2D.OverlapCircle(transform.position, dashDamageRadius, filter, hitEnemiesCache);
+        // TỐI ƯU HÓA TUYỆT ĐỐI: Sử dụng bộ lọc filter đã cache sẵn từ Start, loại bỏ "new ContactFilter2D"
+        int numColliders = Physics2D.OverlapCircle(transform.position, dashDamageRadius, dashDamageFilter, hitEnemiesCache);
 
         for (int i = 0; i < numColliders; i++)
         {
@@ -248,7 +251,7 @@ public class PlayerSwordTech : MonoBehaviour
             Sword swordScript = activeSword.GetComponent<Sword>();
             if (swordScript != null && swordScript.CanBePickedUp)
             {
-                float sqrDistanceToSword = (transform.position - activeSword.transform.position).sqrMagnitude;
+                float sqrDistanceToSword = ((Vector2)transform.position - (Vector2)activeSword.transform.position).sqrMagnitude;
                 if (sqrDistanceToSword <= swordPickUpDistance * swordPickUpDistance)
                 {
                     Debug.Log("Nhân vật đi đến gần và tự động nhặt lại kiếm!");
@@ -264,8 +267,8 @@ public class PlayerSwordTech : MonoBehaviour
         player.rb.gravityScale = originalGravity;
         player.rb.linearVelocity = Vector2.zero;
 
-        if (player.spriteRenderer != null) player.spriteRenderer.enabled = true;
-        if (player.health != null) player.health.SetDashInvincibility(false);
+        player.spriteRenderer.enabled = true;
+        player.health.SetDashInvincibility(false);
 
         enemiesHitDuringDash.Clear();
 

@@ -26,6 +26,13 @@ public class Entity : MonoBehaviour
     public int facingDirection { get; protected set; } = 1; // 1: Phải, -1: Trái
     public bool facingRight { get; protected set; } = true;
 
+    // Các biến hỗ trợ Frame Caching (Tránh tính toán vật lý trùng lặp)
+    private bool isGroundedCached;
+    private int lastGroundedFrame = -1;
+
+    private bool isTouchingWallCached;
+    private int lastWallFrame = -1;
+
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -36,12 +43,40 @@ public class Entity : MonoBehaviour
         anim = GetComponentInChildren<Animator>();
     }
 
-    protected virtual void Start() { }
-    protected virtual void Update() { }
-    protected virtual void FixedUpdate() { }
+    // Đã xóa bỏ các hàm Start(), Update(), FixedUpdate() rỗng để tiết kiệm CPU cho Unity
 
-    public bool IsGrounded() => Physics2D.OverlapCircle(groundCheckPosition.position, groundCheckRadius, groundCheckLayer);
-    public bool IsTouchingWall() => Physics2D.OverlapCircle(wallCheckPosition.position, wallCheckRadius, wallCheckLayer);
+    /// <summary>
+    /// Kiểm tra xem thực thể có chạm đất không.
+    /// Đã tối ưu hóa: Chỉ tính toán vật lý tối đa 1 lần duy nhất mỗi khung hình.
+    /// </summary>
+    public bool IsGrounded()
+    {
+        if (groundCheckPosition == null) return false;
+
+        // Nếu lượt gọi này nằm ở một Frame mới, ta mới quét vật lý lại
+        if (Time.frameCount != lastGroundedFrame)
+        {
+            isGroundedCached = Physics2D.OverlapCircle(groundCheckPosition.position, groundCheckRadius, groundCheckLayer);
+            lastGroundedFrame = Time.frameCount;
+        }
+        return isGroundedCached;
+    }
+
+    /// <summary>
+    /// Kiểm tra xem thực thể có chạm tường không.
+    /// Đã tối ưu hóa: Chỉ tính toán vật lý tối đa 1 lần duy nhất mỗi khung hình.
+    /// </summary>
+    public bool IsTouchingWall()
+    {
+        if (wallCheckPosition == null) return false;
+
+        if (Time.frameCount != lastWallFrame)
+        {
+            isTouchingWallCached = Physics2D.OverlapCircle(wallCheckPosition.position, wallCheckRadius, wallCheckLayer);
+            lastWallFrame = Time.frameCount;
+        }
+        return isTouchingWallCached;
+    }
 
     /// <summary>
     /// Hàm tự động lật mặt thực thể dựa trên hướng vận tốc X.
@@ -56,7 +91,11 @@ public class Entity : MonoBehaviour
     {
         facingRight = !facingRight;
         facingDirection *= -1;
-        transform.Rotate(0, 180, 0); // Xoay 180 độ trục Y chuẩn video, an toàn hơn âm scale
+
+        // Xoay 180 độ quanh trục Y.
+        // LƯU Ý: Vì các điểm check (groundCheckPosition, wallCheckPosition) là con của Entity, 
+        // việc xoay này sẽ tự động đưa điểm check tường sang hướng đối diện một cách hoàn hảo!
+        transform.Rotate(0, 180, 0);
     }
 
     protected virtual void OnDrawGizmos()
