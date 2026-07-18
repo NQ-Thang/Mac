@@ -33,6 +33,8 @@ public class Entity : MonoBehaviour
     private bool isTouchingWallCached;
     private int lastWallFrame = -1;
 
+
+    public LayerMask GetGroundLayer() => groundCheckLayer;
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
