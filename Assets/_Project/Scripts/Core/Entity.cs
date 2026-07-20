@@ -59,7 +59,7 @@ public class Entity : MonoBehaviour
         if (Time.frameCount != lastGroundedFrame)
         {
             isGroundedCached = Physics2D.OverlapCircle(groundCheckPosition.position, groundCheckRadius, groundCheckLayer);
-            lastGroundedFrame = Time.frameCount;
+            lastGroundedFrame = Time.frameCount; // Time.frameCount là số Frame hiện tại thay đổi theo frame
         }
         return isGroundedCached;
     }

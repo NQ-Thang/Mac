@@ -10,7 +10,6 @@ public class FlyingSword : MonoBehaviour
     [SerializeField] private float followSpeed = 5f;       // Tốc độ đuổi theo
     [SerializeField] private float floatSpeed = 2f;        // Tốc độ nhấp nhô lơ lửng
     [SerializeField] private float floatAmount = 0.15f;    // Biên độ nhấp nhô (cao/thấp)
-    [SerializeField] private float flipSpeed = 10f;        // [THÊM MỚI] Tốc độ lật kiếm
 
     private Vector3 velocity = Vector3.zero;
     private Vector3 currentOffset; // [THÊM MỚI] Dùng để lật offset sang bên kia Player
