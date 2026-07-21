@@ -146,4 +146,20 @@ public class Health : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    /// <summary>
+    /// Kiểm tra xem lượng máu hiện tại đã đầy hay chưa.
+    /// </summary>
+    public bool IsHealthFull() => currentHealth >= maxHealth;
+
+    /// <summary>
+    /// Hàm công khai hỗ trợ hồi lại lượng máu cho thực thể, chặn không vượt quá maxHealth.
+    /// </summary>
+    public void Heal(float amount)
+    {
+        if (currentHealth <= 0) return; // Đã chết thì không hồi nữa
+
+        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+        Debug.Log($"{gameObject.name} được hồi máu! Máu hiện tại: {currentHealth}");
+    }
 }
