@@ -8,6 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerCombat))]
 [RequireComponent(typeof(PlayerSwordTech))]
 [RequireComponent(typeof(PlayerAnima))]
+[RequireComponent(typeof(PlayerHeal))]
 public class Player : Entity
 {
     // Các tham chiếu đến mảnh ghép phụ gắn chung trên một Object (Đã được cam kết luôn tồn tại nhờ RequireComponent)
@@ -15,6 +16,7 @@ public class Player : Entity
     public PlayerCombat Combat { get; private set; }
     public PlayerSwordTech SwordTech { get; private set; }
     public PlayerAnima Anima { get; private set; }
+    public PlayerHeal Heal { get; private set; }
 
     [Header("Input Data")]
     public float horizontalInput { get; private set; }
@@ -30,6 +32,7 @@ public class Player : Entity
         Combat = GetComponent<PlayerCombat>();
         SwordTech = GetComponent<PlayerSwordTech>();
         Anima = GetComponent<PlayerAnima>();
+        Heal = GetComponent<PlayerHeal>();
     }
 
     protected virtual void Update()
