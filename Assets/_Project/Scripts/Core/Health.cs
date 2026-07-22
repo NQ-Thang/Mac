@@ -75,6 +75,12 @@ public class Health : MonoBehaviour
     {
         if (rb == null) return;
 
+        if (isPlayer)
+        {
+            Player playerHub = GetComponent<Player>();
+            if (playerHub != null) playerHub.Heal.InterruptHeal();
+        }
+
         float knockbackDirection = transform.position.x > attackerPosition.x ? 1f : -1f;
         rb.linearVelocity = Vector2.zero;
         rb.AddForce(new Vector2(knockbackDirection * knockbackForceX, knockbackForceY), ForceMode2D.Impulse);
