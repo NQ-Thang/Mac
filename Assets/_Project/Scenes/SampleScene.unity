@@ -1166,6 +1166,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6209226506316007078, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7218370281300818650}
+    - targetCorrespondingSourceObject: {fileID: 6209226506316007078, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7218370281300818651}
   m_SourcePrefab: {fileID: 100100000, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
 --- !u!114 &7218370281300818644
 MonoBehaviour:
@@ -1204,6 +1207,22 @@ MonoBehaviour:
   wallCheckLayer:
     serializedVersion: 2
     m_Bits: 256
+--- !u!114 &7218370281300818651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1483183564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa1bc58ffbb7e8b46b0771ba15addd48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healAmount: 20
+  animaCost: 33
+  timeToHeal: 2
+  healKey: 115
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
