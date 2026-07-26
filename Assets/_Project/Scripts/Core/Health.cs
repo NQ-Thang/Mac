@@ -156,7 +156,7 @@ public class Health : MonoBehaviour
     /// <summary>
     /// Kiểm tra xem lượng máu hiện tại đã đầy hay chưa.
     /// </summary>
-    public bool IsHealthFull() => currentHealth >= maxHealth;
+    public bool IsHealthFull() => currentHealth >= maxHealth; // tránh lỗi số thập phân, dùng >= thay vì ==
 
     /// <summary>
     /// Hàm công khai hỗ trợ hồi lại lượng máu cho thực thể, chặn không vượt quá maxHealth.

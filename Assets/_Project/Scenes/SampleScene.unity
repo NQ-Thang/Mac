@@ -674,11 +674,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackPoint: {fileID: 1903761939}
-  attackRange: 0.5
+  attackRange: 1
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
-  attackOffsetDistance: 0.5
+  attackOffsetDistance: 2
   attackDamage: 20
 --- !u!1001 &1529555490
 PrefabInstance:
@@ -1000,7 +1000,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1734678700923501822, guid: 21c7d03ce168e8c40b916d4bd4827c55, type: 3}
       propertyPath: offset.x
-      value: -0.75
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 1734678700923501822, guid: 21c7d03ce168e8c40b916d4bd4827c55, type: 3}
       propertyPath: offset.y
@@ -1008,11 +1008,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4783820464441419794, guid: 21c7d03ce168e8c40b916d4bd4827c55, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.5
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 4783820464441419794, guid: 21c7d03ce168e8c40b916d4bd4827c55, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.5
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 4783820464441419794, guid: 21c7d03ce168e8c40b916d4bd4827c55, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1081,19 +1081,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 911268648247430353, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 911268648247430353, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 911268648247430353, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.14
+      value: -1.174
       objectReference: {fileID: 0}
     - target: {fileID: 911268648247430353, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -2.3
+      value: -2.389
       objectReference: {fileID: 0}
     - target: {fileID: 911268648247430353, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1153,7 +1153,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6391520051908836846, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_Size.y
-      value: 1.1811802
+      value: 1.1298542
       objectReference: {fileID: 0}
     - target: {fileID: 6391520051908836846, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_Offset.x
@@ -1161,7 +1161,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6391520051908836846, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_Offset.y
-      value: -0.05935219
+      value: -0.03368914
       objectReference: {fileID: 0}
     - target: {fileID: 6391520051908836846, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_SpriteTilingProperty.oldSize.x
@@ -1205,11 +1205,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8311895215357140604, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.006
+      value: 0.086
       objectReference: {fileID: 0}
     - target: {fileID: 8311895215357140604, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.643
+      value: -0.595
       objectReference: {fileID: 0}
     - target: {fileID: 8516755318907503253, guid: a5c27bb601d7fce4bacda91efa4eefdc, type: 3}
       propertyPath: jumpForce
@@ -1305,7 +1305,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healAmount: 20
   animaCost: 33
-  timeToHeal: 2
+  timeToHeal: 1
   healKey: 115
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
