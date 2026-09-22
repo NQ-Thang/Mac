@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 8e9c07afd09603b4bad03a15049023f8
+guid: e5834ab9da1691e45876a8270db93b66
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1108467568457119387
-    second: bamboo_weapon_0
+      213: -419148016115861290
+    second: noir_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -49,9 +49,9 @@ TextureImporter:
   spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
-  alignment: 0
-  spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  alignment: 9
+  spritePivot: {x: 0.52974856, y: 0.08203178}
+  spritePixelsToUnits: 200
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: bamboo_weapon_0
+      name: noir_0
       rect:
         serializedVersion: 2
-        x: 44
-        y: 6
-        width: 23
-        height: 108
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 308
+        y: 61
+        width: 408
+        height: 901
+      alignment: 9
+      pivot: {x: 0.55, y: 0.02}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b967dee6161126f00800000000000000
-      internalID: 1108467568457119387
+      spriteID: 6d8ba1f9913ee2af0800000000000000
+      internalID: -419148016115861290
       vertices: []
       indices: 
       edges: []
@@ -125,8 +125,8 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
-    internalID: 0
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 1537655665
     vertices: []
     indices: 
     edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      bamboo_weapon_0: 1108467568457119387
+      noir_0: -419148016115861290
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
