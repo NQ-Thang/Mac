@@ -17,9 +17,11 @@ public class PlayerSwordTech : MonoBehaviour
 
     [Header("Dash to Sword Settings")]
     [SerializeField] private float dashSpeed = 25f;
+    [SerializeField] private float dashShrinkScale = 0.2f;
 
     private Vector2 dashTargetPosition;
     private float originalGravity;
+    private Vector3 originalScale;
 
     [Header("Dash Attack Settings")]
     [SerializeField] private int dashDamage = 20;
@@ -42,6 +44,7 @@ public class PlayerSwordTech : MonoBehaviour
     {
         player = GetComponent<Player>();
         originalGravity = player.rb.gravityScale;
+        originalScale = transform.localScale;
         mainCamera = Camera.main;
 
         dashDamageFilter = new ContactFilter2D();
@@ -53,7 +56,10 @@ public class PlayerSwordTech : MonoBehaviour
     {
         if (player.Movement.isDashing)
         {
-            CheckDashArrival();
+            if (activeSword == null)
+            {
+                ResetDashState();
+            }
         }
         else
         {
@@ -122,10 +128,19 @@ public class PlayerSwordTech : MonoBehaviour
 
             player.Movement.isDashing = true;
             player.rb.gravityScale = 0f;
-            enemiesHitDuringDash.Clear();
 
+            // Xuyên qua toàn bộ vật thể và địa hình, không bị collider trên đường đi cản lại
+            if (player.coreCollider != null)
+            {
+                player.coreCollider.enabled = false;
+            }
+
+            // Co lại thành một chùm sáng/điểm nhỏ trong thời gian dash
+            transform.localScale = originalScale * dashShrinkScale;
+            player.SetRenderersVisible(true);
+
+            enemiesHitDuringDash.Clear();
             player.health.SetDashInvincibility(true);
-            player.SetRenderersVisible(false);
         }
     }
 
@@ -156,30 +171,27 @@ public class PlayerSwordTech : MonoBehaviour
 
     void ExecuteDash()
     {
-        Vector2 currentPos = transform.position;
-        Vector2 dashDirection = (dashTargetPosition - currentPos).normalized;
-        player.rb.linearVelocity = dashDirection * dashSpeed;
-    }
-
-    void CheckDashArrival()
-    {
         if (activeSword == null)
         {
             ResetDashState();
             return;
         }
 
-        // Tối ưu hóa tính toán khoảng cách 2D bằng sqrMagnitude của Vector2
-        float sqrDistanceToTarget = ((Vector2)transform.position - dashTargetPosition).sqrMagnitude;
+        Vector2 currentPos = transform.position;
+        Vector2 toTarget = dashTargetPosition - currentPos;
+        float distance = toTarget.magnitude;
+        float step = dashSpeed * Time.fixedDeltaTime;
 
-        if (sqrDistanceToTarget < 0.25f) // 0.5f * 0.5f = 0.25f
+        if (distance <= step || distance < 0.1f)
         {
+            player.rb.position = dashTargetPosition;
             transform.position = dashTargetPosition;
             ResetDashState();
         }
-        else if (sqrDistanceToTarget < 2.25f && (player.IsGrounded() || player.IsTouchingWall())) // 1.5f * 1.5f = 2.25f
+        else
         {
-            ResetDashState();
+            Vector2 dashDirection = toTarget / distance;
+            player.rb.linearVelocity = dashDirection * dashSpeed;
         }
     }
 
@@ -228,9 +240,16 @@ public class PlayerSwordTech : MonoBehaviour
         player.rb.gravityScale = originalGravity;
         player.rb.linearVelocity = Vector2.zero;
 
+        // Phục hồi kích thước và trạng thái bình thường của nhân vật
+        transform.localScale = originalScale;
         player.SetRenderersVisible(true);
-        player.health.SetDashInvincibility(false);
 
+        if (player.coreCollider != null)
+        {
+            player.coreCollider.enabled = true;
+        }
+
+        player.health.SetDashInvincibility(false);
         enemiesHitDuringDash.Clear();
 
         if (activeSword != null)
@@ -240,5 +259,13 @@ public class PlayerSwordTech : MonoBehaviour
         }
 
         player.Movement.isDashing = false;
+    }
+
+    void OnDisable()
+    {
+        if (player != null && player.Movement != null && player.Movement.isDashing)
+        {
+            ResetDashState();
+        }
     }
 }
