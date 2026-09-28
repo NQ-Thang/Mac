@@ -22,7 +22,7 @@ public class PlayerSwordTech : MonoBehaviour
     private float originalGravity;
 
     [Header("Dash Attack Settings")]
-    [SerializeField] private int dashDamage = 2;
+    [SerializeField] private int dashDamage = 20;
     [SerializeField] private float dashDamageRadius = 0.6f;
     [SerializeField] private LayerMask enemyLayer;
 
@@ -38,10 +38,6 @@ public class PlayerSwordTech : MonoBehaviour
     private readonly List<Collider2D> enemiesHitDuringDash = new List<Collider2D>();
     private ContactFilter2D dashDamageFilter;
 
-    // Cache Coroutine và Wait để tối ưu bộ nhớ
-    private Coroutine postDashInvincibilityCoroutine;
-    private WaitForSeconds postDashInvincibleWait;
-
     void Start()
     {
         player = GetComponent<Player>();
@@ -51,8 +47,6 @@ public class PlayerSwordTech : MonoBehaviour
         dashDamageFilter = new ContactFilter2D();
         dashDamageFilter.SetLayerMask(enemyLayer);
         dashDamageFilter.useLayerMask = true;
-
-        postDashInvincibleWait = new WaitForSeconds(0.3f);
     }
 
     void Update()
@@ -131,7 +125,7 @@ public class PlayerSwordTech : MonoBehaviour
             enemiesHitDuringDash.Clear();
 
             player.health.SetDashInvincibility(true);
-            player.spriteRenderer.enabled = false;
+            player.SetRenderersVisible(false);
         }
     }
 
@@ -181,45 +175,12 @@ public class PlayerSwordTech : MonoBehaviour
         if (sqrDistanceToTarget < 0.25f) // 0.5f * 0.5f = 0.25f
         {
             transform.position = dashTargetPosition;
-            Transform swordParent = activeSword.transform.parent;
-
-            if (swordParent != null)
-            {
-                AnchorPointEnemy anchorEnemy = swordParent.GetComponentInParent<AnchorPointEnemy>();
-                if (anchorEnemy != null)
-                {
-                    float bounceForce = anchorEnemy.GetBounceForce();
-                    anchorEnemy.ExecuteAnchorKill();
-                    TriggerBounce(bounceForce);
-                    return;
-                }
-            }
-
             ResetDashState();
         }
         else if (sqrDistanceToTarget < 2.25f && (player.IsGrounded() || player.IsTouchingWall())) // 1.5f * 1.5f = 2.25f
         {
             ResetDashState();
         }
-    }
-
-    private void TriggerBounce(float bounceForce)
-    {
-        if (postDashInvincibilityCoroutine != null) StopCoroutine(postDashInvincibilityCoroutine);
-        postDashInvincibilityCoroutine = StartCoroutine(PostDashInvincibilityRoutine());
-
-        ResetDashState();
-
-        player.Movement.ForceWallJumpState(0.25f);
-        player.rb.linearVelocity = new Vector2(player.rb.linearVelocity.x, bounceForce);
-    }
-
-    private IEnumerator PostDashInvincibilityRoutine()
-    {
-        player.health.SetDashInvincibility(true);
-        yield return postDashInvincibleWait; // Sử dụng biến cache tránh sinh rác GC
-        player.health.SetDashInvincibility(false);
-        postDashInvincibilityCoroutine = null;
     }
 
     void HandleDashDamage()
@@ -234,7 +195,7 @@ public class PlayerSwordTech : MonoBehaviour
 
             if (!enemiesHitDuringDash.Contains(enemy))
             {
-                Health enemyHealth = enemy.GetComponent<Health>();
+                Health enemyHealth = enemy.GetComponentInParent<Health>();
                 if (enemyHealth != null)
                 {
                     enemyHealth.TakeDamage(dashDamage, transform.position);
@@ -267,7 +228,7 @@ public class PlayerSwordTech : MonoBehaviour
         player.rb.gravityScale = originalGravity;
         player.rb.linearVelocity = Vector2.zero;
 
-        player.spriteRenderer.enabled = true;
+        player.SetRenderersVisible(true);
         player.health.SetDashInvincibility(false);
 
         enemiesHitDuringDash.Clear();

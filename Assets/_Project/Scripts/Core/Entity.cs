@@ -15,12 +15,15 @@ public class Entity : MonoBehaviour
 
     [Header("Collision Check Settings")]
     [SerializeField] protected Transform groundCheckPosition;
+    [SerializeField] protected Vector2 groundCheckSize = new Vector2(0.85f, 0.25f);
     [SerializeField] protected float groundCheckRadius = 0.2f;
     [SerializeField] protected LayerMask groundCheckLayer;
 
     [SerializeField] protected Transform wallCheckPosition;
+    [SerializeField] protected Vector2 wallCheckSize = new Vector2(0.35f, 1.4f);
     [SerializeField] protected float wallCheckRadius = 0.2f;
     [SerializeField] protected LayerMask wallCheckLayer;
+    [SerializeField] protected bool useBoxCheck = true;
 
     [Header("Direction Details")]
     public int facingDirection { get; protected set; } = 1; // 1: Phải, -1: Trái
@@ -33,8 +36,11 @@ public class Entity : MonoBehaviour
     private bool isTouchingWallCached;
     private int lastWallFrame = -1;
 
+    protected SpriteRenderer[] allSpriteRenderers;
 
     public LayerMask GetGroundLayer() => groundCheckLayer;
+    public LayerMask GetWallLayer() => wallCheckLayer;
+
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -42,31 +48,53 @@ public class Entity : MonoBehaviour
         coreCollider = GetComponent<Collider2D>();
 
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        allSpriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
         anim = GetComponentInChildren<Animator>();
     }
 
-    // Đã xóa bỏ các hàm Start(), Update(), FixedUpdate() rỗng để tiết kiệm CPU cho Unity
+    /// <summary>
+    /// Bật hoặc tắt hiển thị toàn bộ SpriteRenderer (bao gồm cả thân và đuôi).
+    /// </summary>
+    public virtual void SetRenderersVisible(bool isVisible)
+    {
+        if (allSpriteRenderers != null)
+        {
+            for (int i = 0; i < allSpriteRenderers.Length; i++)
+            {
+                if (allSpriteRenderers[i] != null)
+                {
+                    allSpriteRenderers[i].enabled = isVisible;
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Kiểm tra xem thực thể có chạm đất không.
-    /// Đã tối ưu hóa: Chỉ tính toán vật lý tối đa 1 lần duy nhất mỗi khung hình.
+    /// Sử dụng OverlapBox bao phủ toàn bộ chiều rộng chân để tránh bị hụt ground khi đứng sát mép.
     /// </summary>
     public bool IsGrounded()
     {
         if (groundCheckPosition == null) return false;
 
-        // Nếu lượt gọi này nằm ở một Frame mới, ta mới quét vật lý lại
         if (Time.frameCount != lastGroundedFrame)
         {
-            isGroundedCached = Physics2D.OverlapCircle(groundCheckPosition.position, groundCheckRadius, groundCheckLayer);
-            lastGroundedFrame = Time.frameCount; // Time.frameCount là số Frame hiện tại thay đổi theo frame
+            if (useBoxCheck && groundCheckSize.x > 0f && groundCheckSize.y > 0f)
+            {
+                isGroundedCached = Physics2D.OverlapBox(groundCheckPosition.position, groundCheckSize, 0f, groundCheckLayer);
+            }
+            else
+            {
+                isGroundedCached = Physics2D.OverlapCircle(groundCheckPosition.position, groundCheckRadius, groundCheckLayer);
+            }
+            lastGroundedFrame = Time.frameCount;
         }
         return isGroundedCached;
     }
 
     /// <summary>
     /// Kiểm tra xem thực thể có chạm tường không.
-    /// Đã tối ưu hóa: Chỉ tính toán vật lý tối đa 1 lần duy nhất mỗi khung hình.
+    /// Sử dụng OverlapBox theo chiều dọc thân để nhận diện tường ổn định ở mọi độ cao tiếp xúc.
     /// </summary>
     public bool IsTouchingWall()
     {
@@ -74,7 +102,14 @@ public class Entity : MonoBehaviour
 
         if (Time.frameCount != lastWallFrame)
         {
-            isTouchingWallCached = Physics2D.OverlapCircle(wallCheckPosition.position, wallCheckRadius, wallCheckLayer);
+            if (useBoxCheck && wallCheckSize.x > 0f && wallCheckSize.y > 0f)
+            {
+                isTouchingWallCached = Physics2D.OverlapBox(wallCheckPosition.position, wallCheckSize, 0f, wallCheckLayer);
+            }
+            else
+            {
+                isTouchingWallCached = Physics2D.OverlapCircle(wallCheckPosition.position, wallCheckRadius, wallCheckLayer);
+            }
             lastWallFrame = Time.frameCount;
         }
         return isTouchingWallCached;
@@ -83,13 +118,13 @@ public class Entity : MonoBehaviour
     /// <summary>
     /// Hàm tự động lật mặt thực thể dựa trên hướng vận tốc X.
     /// </summary>
-    protected virtual void ControlFlip(float velocityX)
+    public virtual void ControlFlip(float velocityX)
     {
         if (velocityX > 0 && !facingRight) Flip();
         else if (velocityX < 0 && facingRight) Flip();
     }
 
-    protected virtual void Flip()
+    public virtual void Flip()
     {
         facingRight = !facingRight;
         facingDirection *= -1;
@@ -105,12 +140,26 @@ public class Entity : MonoBehaviour
         if (groundCheckPosition != null)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheckPosition.position, groundCheckRadius);
+            if (useBoxCheck && groundCheckSize.x > 0f && groundCheckSize.y > 0f)
+            {
+                Gizmos.DrawWireCube(groundCheckPosition.position, groundCheckSize);
+            }
+            else
+            {
+                Gizmos.DrawWireSphere(groundCheckPosition.position, groundCheckRadius);
+            }
         }
         if (wallCheckPosition != null)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(wallCheckPosition.position, wallCheckRadius);
+            if (useBoxCheck && wallCheckSize.x > 0f && wallCheckSize.y > 0f)
+            {
+                Gizmos.DrawWireCube(wallCheckPosition.position, wallCheckSize);
+            }
+            else
+            {
+                Gizmos.DrawWireSphere(wallCheckPosition.position, wallCheckRadius);
+            }
         }
     }
 }

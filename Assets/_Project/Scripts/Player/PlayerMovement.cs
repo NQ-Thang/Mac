@@ -8,12 +8,12 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float moveSpeed = 8f;
-    [SerializeField] private float jumpForce = 12f;
-    [SerializeField] private float wallSlideSpeed = 2f;
-    [SerializeField] private Vector2 wallJumpForce = new Vector2(10f, 14f);
-    [SerializeField] private float wallJumpDuration = 0.15f;
-    [SerializeField] private float wallCatchDelay = 0.1f;
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float jumpForce = 13.5f;
+    [SerializeField] private float wallSlideSpeed = 2.5f;
+    [SerializeField] private Vector2 wallJumpForce = new Vector2(11f, 13.5f);
+    [SerializeField] private float wallJumpDuration = 0.16f;
+    [SerializeField] private float wallCatchDelay = 0.06f;
     [SerializeField] private float fallMultiplier = 2.5f;
 
     [Header("Jump Assist & Variable Height")]
@@ -21,18 +21,19 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpCutMultiplier = 2.5f;
 
     [Header("Coyote Time Settings")]
-    [SerializeField] private float coyoteTime = 0.12f;
+    [SerializeField] private float coyoteTime = 0.15f;
     private float coyoteTimeCounter;
 
     [Header("Apex Modifiers Settings")]
     [SerializeField] private float apexThreshold = 1.5f;
     [SerializeField] private float apexGravityMultiplier = 0.5f;
-    [SerializeField] private float apexBonusSpeedMultiplier = 1.2f;
+    [SerializeField] private float apexBonusSpeedMultiplier = 1.15f;
 
     [Header("Ledge Corner Correction Settings")]
-    [SerializeField] private float cornerCorrectionDistance = 0.2f;
+    [SerializeField] private float cornerCorrectionDistance = 0.38f;
+    [SerializeField] private float cornerCorrectionNudge = 0.12f;
     [SerializeField] private Transform headCheckPosition;
-    [SerializeField] private float headCheckDistance = 0.2f;
+    [SerializeField] private float headCheckDistance = 0.35f;
 
     private float currentApexBonus = 1f;
     private bool isAtApex;
@@ -54,6 +55,11 @@ public class PlayerMovement : MonoBehaviour
     {
         player = GetComponent<Player>();
         wallCatchWait = new WaitForSeconds(wallCatchDelay);
+
+        if (headCheckPosition == null)
+        {
+            headCheckPosition = transform.Find("headCheck");
+        }
     }
 
     void Update()
@@ -150,9 +156,14 @@ public class PlayerMovement : MonoBehaviour
                 player.rb.linearVelocity = new Vector2(wallJumpDirection * wallJumpForce.x, wallJumpForce.y);
                 wallJumpCounter = wallJumpDuration;
 
+                // Tự động lật mặt nhân vật hướng ra ngoài tường để wallCheck hướng sẵn về phía tường đối diện
+                player.Flip();
+
                 jumpBufferCounter = 0f;
                 coyoteTimeCounter = 0f;
                 isWallSliding = false;
+                isWallFreezing = false;
+                StopWallCatchCoroutine();
                 isJumping = true;
             }
         }
@@ -179,11 +190,11 @@ public class PlayerMovement : MonoBehaviour
 
         if (leftHit && !rightHit)
         {
-            player.rb.position += new Vector2(cornerCorrectionDistance, 0);
+            player.rb.position += new Vector2(cornerCorrectionNudge, 0);
         }
         else if (rightHit && !leftHit)
         {
-            player.rb.position -= new Vector2(cornerCorrectionDistance, 0);
+            player.rb.position -= new Vector2(cornerCorrectionNudge, 0);
         }
     }
 
@@ -254,7 +265,14 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isWallSliding)
         {
-            player.rb.linearVelocity = new Vector2(player.rb.linearVelocity.x, -wallSlideSpeed);
+            if (isWallFreezing)
+            {
+                player.rb.linearVelocity = new Vector2(player.rb.linearVelocity.x, 0f);
+            }
+            else
+            {
+                player.rb.linearVelocity = new Vector2(player.rb.linearVelocity.x, -wallSlideSpeed);
+            }
         }
     }
 

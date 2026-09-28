@@ -93,7 +93,7 @@ public class EnemyBase : Entity, IEnemy
 
     /// <summary>
     /// Hàm phản hồi khi kẻ địch bị trúng đòn. 
-    /// Viết dạng virtual để các lớp con (như VoTri) có thể override (ghi đè) và tùy biến cơ chế riêng.
+    /// Viết dạng virtual để các lớp con có thể override (ghi đè) và tùy biến cơ chế riêng.
     /// </summary>
     public virtual void OnHit()
     {

@@ -25,12 +25,18 @@ public class Health : MonoBehaviour
 
     private Rigidbody2D rb;
     private PlayerMovement playerMovement;
+    private SpriteRenderer[] allSpriteRenderers;
+    private WaitForSeconds flashWait;
+    private WaitForSeconds knockbackWait;
 
     void Start()
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        allSpriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        flashWait = new WaitForSeconds(flashInterval);
+        knockbackWait = new WaitForSeconds(knockbackDuration);
 
         if (isPlayer)
         {
@@ -48,11 +54,10 @@ public class Health : MonoBehaviour
         currentHealth -= damageAmount;
         Debug.Log(gameObject.name + " Mau con: " + currentHealth);
 
-        VoTri voTri = GetComponent<VoTri>();
-
-        if (voTri != null)
+        IEnemy enemy = GetComponent<IEnemy>();
+        if (enemy != null)
         {
-            voTri.OnHit();
+            enemy.OnHit();
         }
 
         if (currentHealth > 0)
@@ -94,7 +99,7 @@ public class Health : MonoBehaviour
         {
             playerMovement.ApplyKnockbackStun(knockbackDuration);
         }
-        yield return new WaitForSeconds(knockbackDuration);
+        yield return knockbackWait;
     }
 
     private IEnumerator BecomeInvincibleRoutine()
@@ -106,25 +111,37 @@ public class Health : MonoBehaviour
         float timer = 0f;
         while (timer < invincibleDuration) // chạy trong khoảng thời gian bất tử cho đến khi hết invincibleDuration
         {
-            if (spriteRenderer != null)
-            {
-                Color color = spriteRenderer.color;
-                color.a = (Mathf.Approximately(color.a, 1f)) ? 0.3f : 1f; // Chuyển đổi giữa rõ nét (1.0) và bán trong suốt (0.3), a -> alpha
-                spriteRenderer.color = color;
-            }
-            yield return new WaitForSeconds(flashInterval); // tạm dừng coroutine trong khoảng thời gian flashInterval trước khi tiếp tục 
+            SetAlpha(0.3f);
+            yield return flashWait;
             timer += flashInterval;
+
+            if (timer < invincibleDuration)
+            {
+                SetAlpha(1f);
+                yield return flashWait;
+                timer += flashInterval;
+            }
         }
 
-        // sau khi kết thúc vòng lặp
-        if (spriteRenderer != null)
-        {
-            Color finalColor = spriteRenderer.color;
-            finalColor.a = 1f; // Đảm bảo trả lại độ rõ nét 100% khi hết bất tử
-            spriteRenderer.color = finalColor;
-        }
+        SetAlpha(1f);
         gameObject.layer = normalPlayerLayer; // chuyển layer trở lại "Player" để nhận va chạm với kẻ thù
         isInvincible = false; 
+    }
+
+    private void SetAlpha(float alpha)
+    {
+        if (allSpriteRenderers != null)
+        {
+            for (int i = 0; i < allSpriteRenderers.Length; i++)
+            {
+                if (allSpriteRenderers[i] != null)
+                {
+                    Color c = allSpriteRenderers[i].color;
+                    c.a = alpha;
+                    allSpriteRenderers[i].color = c;
+                }
+            }
+        }
     }
 
     public void SetDashInvincibility(bool isInvincible) // Hàm này được gọi từ PlayerDash.cs để đặt trạng thái bất tử khi dash
